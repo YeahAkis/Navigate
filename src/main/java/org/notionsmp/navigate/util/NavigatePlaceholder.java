@@ -27,10 +27,10 @@ public class NavigatePlaceholder extends PlaceholderExpansion {
 
     @Override
     public String onPlaceholderRequest(Player player, @NotNull String params) {
-        if (player == null) return null;
+        if (player == null) return "No player";
 
         PathfindingTask task = Navigate.getInstance().getActiveNavigations().get(player.getUniqueId());
-        if (task == null) return "No target";
+        if (task == null || task.getTargetLocation() == null) return "No target";
 
         Location target = task.getTargetLocation();
 
@@ -46,5 +46,10 @@ public class NavigatePlaceholder extends PlaceholderExpansion {
             case "world" -> target.getWorld().getName();
             default -> null;
         };
+    }
+
+    @Override
+    public boolean persist() {
+        return true;
     }
 }

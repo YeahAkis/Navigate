@@ -26,7 +26,7 @@ public final class Navigate extends JavaPlugin {
 
         saveDefaultConfig();
 
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null && Bukkit.getPluginManager().getPlugin("PlaceholderAPI").isEnabled()) {
             new NavigatePlaceholder().register();
         }
     }
