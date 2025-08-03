@@ -5,3 +5,8 @@ api-version: '1.21'
 load: STARTUP
 authors: [ "Akis (discord: yeahakis)" ]
 folia-supported: true
+dependencies:
+  server:
+    PlaceholderAPI:
+      required: false
+      load: BEFORE
