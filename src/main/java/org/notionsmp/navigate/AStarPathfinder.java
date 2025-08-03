@@ -23,6 +23,7 @@ public class AStarPathfinder {
     );
 
     private static final int MAX_PATHFINDING_ITERATIONS = 100000;
+    private static final int MAX_PRE_PATHFINDING_RADIUS = 32;
     private final boolean safeMode;
     private final Set<Material> allowedMaterials;
 
@@ -43,13 +44,26 @@ public class AStarPathfinder {
             return Collections.emptyList();
         }
 
+        List<Location> prePath = new ArrayList<>();
+        Location actualStart = start;
+        if (allowedMaterials != null && !allowedMaterials.isEmpty()) {
+            Location blockBelowStart = start.clone().subtract(0, 1, 0);
+            if (!allowedMaterials.contains(blockBelowStart.getBlock().getType())) {
+                prePath = findPathToClosestAllowedBlock(start);
+                if (prePath.isEmpty()) {
+                    return Collections.emptyList();
+                }
+                actualStart = prePath.get(prePath.size() - 1);
+            }
+        }
+
         PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingDouble(n -> n.fCost));
         Map<Location, Node> allNodes = new HashMap<>();
         Set<Location> closedSet = new HashSet<>();
 
-        Node startNode = new Node(start, null, 0, getDistance(start, end));
+        Node startNode = new Node(actualStart, null, 0, getDistance(actualStart, end));
         openSet.add(startNode);
-        allNodes.put(start, startNode);
+        allNodes.put(actualStart, startNode);
 
         int iterations = 0;
 
@@ -65,7 +79,10 @@ public class AStarPathfinder {
             if (currentNode.location.getBlockX() == end.getBlockX() &&
                     currentNode.location.getBlockY() == end.getBlockY() &&
                     currentNode.location.getBlockZ() == end.getBlockZ()) {
-                return reconstructPath(currentNode);
+                List<Location> mainPath = reconstructPath(currentNode);
+                List<Location> fullPath = new ArrayList<>(prePath);
+                fullPath.addAll(mainPath);
+                return fullPath;
             }
 
             for (Location neighborLoc : getNeighbors(currentNode.location)) {
@@ -161,6 +178,112 @@ public class AStarPathfinder {
         return (int) from.distance(to);
     }
 
+    private List<Location> findPathToClosestAllowedBlock(Location start) {
+        if (allowedMaterials == null || allowedMaterials.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Queue<Location> queue = new LinkedList<>();
+        Map<Location, Location> cameFrom = new HashMap<>();
+        Set<Location> visited = new HashSet<>();
+
+        Location startBlockLoc = start.getBlock().getLocation();
+        queue.add(startBlockLoc);
+        visited.add(startBlockLoc);
+        cameFrom.put(startBlockLoc, null);
+
+        int iterations = 0;
+        while (!queue.isEmpty() && iterations < MAX_PATHFINDING_ITERATIONS) {
+            Location current = queue.poll();
+            iterations++;
+
+            Location blockBelow = current.clone().subtract(0, 1, 0);
+            if (allowedMaterials.contains(blockBelow.getBlock().getType())) {
+                List<Location> path = new ArrayList<>();
+                Location temp = current;
+                while (temp != null) {
+                    path.add(temp);
+                    temp = cameFrom.get(temp);
+                }
+                Collections.reverse(path);
+                return path;
+            }
+
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (dx == 0 && dy == 0 && dz == 0) continue;
+
+                        Location neighbor = new Location(current.getWorld(),
+                                current.getX() + dx,
+                                current.getY() + dy,
+                                current.getZ() + dz);
+
+                        if (!visited.contains(neighbor) && start.distance(neighbor) < MAX_PRE_PATHFINDING_RADIUS && isPathableForPrePath(neighbor, current)) {
+                            visited.add(neighbor);
+                            cameFrom.put(neighbor, current);
+                            queue.add(neighbor);
+                        }
+                    }
+                }
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    private boolean isPathableForPrePath(Location loc, Location previousLoc) {
+        Block block = loc.getBlock();
+        Block blockAbove = loc.clone().add(0, 1, 0).getBlock();
+        Block blockBelow = loc.clone().add(0, -1, 0).getBlock();
+
+        if (!PASSABLE_MATERIALS.contains(block.getType()) || !PASSABLE_MATERIALS.contains(blockAbove.getType())) {
+            return false;
+        }
+
+        if (isDiagonalMove(loc, previousLoc)) {
+            if (!isDiagonalPassable(previousLoc, loc)) {
+                return false;
+            }
+        }
+
+        if (loc.getBlockY() == previousLoc.getBlockY()) {
+            return blockBelow.getType().isSolid() ||
+                    blockBelow.getType() == Material.WATER ||
+                    blockBelow.getType() == Material.LAVA;
+        }
+
+        if (loc.getBlockY() > previousLoc.getBlockY()) {
+            int yDiff = loc.getBlockY() - previousLoc.getBlockY();
+            if (yDiff != 1) return false;
+            return blockBelow.getType().isSolid();
+        }
+
+        if (loc.getBlockY() < previousLoc.getBlockY()) {
+            int yDiff = previousLoc.getBlockY() - loc.getBlockY();
+            if (safeMode) {
+                if (yDiff > 3) return false;
+                Location landingCheck = loc.clone().add(0, -1, 0);
+                return landingCheck.getBlock().getType().isSolid() ||
+                        landingCheck.clone().add(0, -1, 0).getBlock().getType().isSolid();
+            } else {
+                Location checkLoc = loc.clone();
+                while (checkLoc.getBlockY() > 0) {
+                    checkLoc.add(0, -1, 0);
+                    Block checkBlock = checkLoc.getBlock();
+                    if (checkBlock.getType().isSolid()) {
+                        return true;
+                    }
+                    if (!PASSABLE_MATERIALS.contains(checkBlock.getType())) {
+                        return false;
+                    }
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
+
     private List<Location> getNeighbors(Location loc) {
         List<Location> neighbors = new ArrayList<>();
         int x = loc.getBlockX();
@@ -187,18 +310,18 @@ public class AStarPathfinder {
         Block blockAbove = loc.clone().add(0, 1, 0).getBlock();
         Block blockBelow = loc.clone().add(0, -1, 0).getBlock();
 
-        if (allowedMaterials != null && !allowedMaterials.isEmpty()) {
-            if (!allowedMaterials.contains(blockBelow.getType())) {
-                return false;
-            }
-        }
-
         if (MaterialSetTag.CLIMBABLE.getValues().contains(block.getType())) {
             return true;
         }
 
         if (isDiagonalMove(loc, previousLoc)) {
             if (!isDiagonalPassable(previousLoc, loc)) {
+                return false;
+            }
+        }
+
+        if (allowedMaterials != null && !allowedMaterials.isEmpty()) {
+            if (!allowedMaterials.contains(blockBelow.getType())) {
                 return false;
             }
         }
