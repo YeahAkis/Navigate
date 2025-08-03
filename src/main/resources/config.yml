@@ -1,0 +1,11 @@
+strings:
+  direction:
+    south: "South"
+    south-west: "South-West"
+    west: "West"
+    north-west: "North-West"
+    north: "North"
+    north-east: "North-East"
+    east: "East"
+    south-east: "South-East"
+    unknown: "N/A"

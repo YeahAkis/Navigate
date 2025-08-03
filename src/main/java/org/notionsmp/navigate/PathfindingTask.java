@@ -79,4 +79,8 @@ public class PathfindingTask extends BukkitRunnable {
         this.cancel();
         Navigate.getInstance().getActiveNavigations().remove(player.getUniqueId());
     }
+
+    public Location getTargetLocation() {
+        return targetLocation;
+    }
 }

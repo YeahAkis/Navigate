@@ -2,7 +2,10 @@ package org.notionsmp.navigate;
 
 import co.aikar.commands.PaperCommandManager;
 import com.tcoded.folialib.FoliaLib;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.notionsmp.navigate.util.NavigatePlaceholder;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -20,6 +23,12 @@ public final class Navigate extends JavaPlugin {
         activeNavigations = new HashMap<>();
         PaperCommandManager manager = new PaperCommandManager(this);
         manager.registerCommand(new NavigateCommand());
+
+        saveDefaultConfig();
+
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            new NavigatePlaceholder().register();
+        }
     }
 
     @Override
