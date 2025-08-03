@@ -5,6 +5,7 @@ import co.aikar.commands.annotation.*;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -12,6 +13,9 @@ import org.bukkit.entity.Player;
 
 import java.lang.management.ManagementFactory;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @CommandAlias("navigate")
 @CommandPermission("navigate.use")
@@ -19,11 +23,27 @@ public class NavigateCommand extends BaseCommand {
     MiniMessage miniMessage = MiniMessage.miniMessage();
 
     @Subcommand("start")
-    @Syntax("[x] [y] [z] (safeMode)")
-    @CommandCompletion("@nothing @nothing @nothing true|false")
+    @Syntax("[x] [y] [z] (safeMode) [materials]")
+    @CommandCompletion("@nothing @nothing @nothing true|false @nothing")
     @Description("Start navigating to target location")
-    public void onStart(Player player, int x, int y, int z, @Optional String safeMode) {
-        boolean safeModeBool = safeMode == null || Boolean.parseBoolean(safeMode);
+    public void onStart(Player player, int x, int y, int z, @Optional String[] args) {
+        boolean safeMode = true;
+        Set<Material> materialSet = null;
+
+        if (args != null && args.length > 0) {
+            try {
+                safeMode = !args[0].equalsIgnoreCase("false");
+            } catch (Exception ignored) {}
+
+            if (args.length > 1) {
+                String materials = String.join("", Arrays.copyOfRange(args, 1, args.length));
+                materialSet = Arrays.stream(materials.split(","))
+                        .map(String::toUpperCase)
+                        .map(Material::valueOf)
+                        .collect(Collectors.toSet());
+            }
+        }
+
         if (Navigate.getInstance().getActiveNavigations().containsKey(player.getUniqueId())) {
             Navigate.getInstance().getActiveNavigations().get(player.getUniqueId()).cancel();
             Navigate.getInstance().getActiveNavigations().remove(player.getUniqueId());
@@ -31,10 +51,10 @@ public class NavigateCommand extends BaseCommand {
         }
 
         Location targetLocation = new Location(player.getWorld(), x, y, z);
-        PathfindingTask newTask = new PathfindingTask(player, targetLocation, safeModeBool);
+        PathfindingTask newTask = new PathfindingTask(player, targetLocation, safeMode, materialSet);
         newTask.runTaskTimer(Navigate.getInstance(), 0L, 10L);
         Navigate.getInstance().getActiveNavigations().put(player.getUniqueId(), newTask);
-        player.sendMessage("Navigation started to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeModeBool);
+        player.sendMessage("Navigation started to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeMode);
     }
 
     @Subcommand("stop")
@@ -54,14 +74,30 @@ public class NavigateCommand extends BaseCommand {
     @Syntax("<player> <x> <y> <z> (safeMode)")
     @CommandCompletion("@players @nothing @nothing @nothing true|false")
     @Description("Start navigating player to target location")
-    public void onStartFor(CommandSender sender, String playerName, int x, int y, int z, @Optional String safeMode) {
+    public void onStartFor(CommandSender sender, String playerName, int x, int y, int z, @Optional String[] args) {
         Player player = Bukkit.getPlayer(playerName);
         if (player == null) {
             sender.sendMessage("Player not found.");
             return;
         }
 
-        boolean safeModeBool = safeMode == null || Boolean.parseBoolean(safeMode);
+        boolean safeMode = true;
+        Set<Material> materialSet = null;
+
+        if (args != null && args.length > 0) {
+            try {
+                safeMode = !args[0].equalsIgnoreCase("false");
+            } catch (Exception ignored) {}
+
+            if (args.length > 1) {
+                String materials = String.join("", Arrays.copyOfRange(args, 1, args.length));
+                materialSet = Arrays.stream(materials.split(","))
+                        .map(String::toUpperCase)
+                        .map(Material::valueOf)
+                        .collect(Collectors.toSet());
+            }
+        }
+
         if (Navigate.getInstance().getActiveNavigations().containsKey(player.getUniqueId())) {
             Navigate.getInstance().getActiveNavigations().get(player.getUniqueId()).cancel();
             Navigate.getInstance().getActiveNavigations().remove(player.getUniqueId());
@@ -69,10 +105,10 @@ public class NavigateCommand extends BaseCommand {
         }
 
         Location targetLocation = new Location(player.getWorld(), x, y, z);
-        PathfindingTask newTask = new PathfindingTask(player, targetLocation, safeModeBool);
+        PathfindingTask newTask = new PathfindingTask(player, targetLocation, safeMode, materialSet);
         newTask.runTaskTimer(Navigate.getInstance(), 0L, 10L);
         Navigate.getInstance().getActiveNavigations().put(player.getUniqueId(), newTask);
-        sender.sendMessage("Navigation started for " + player.getName() + " to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeModeBool);
+        sender.sendMessage("Navigation started for " + player.getName() + " to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeMode);
     }
 
     @Subcommand("stopfor")
@@ -131,9 +167,9 @@ public class NavigateCommand extends BaseCommand {
     public void onHelp(CommandSender sender) {
         sender.sendMessage(miniMessage.deserialize("<color:#006565>Navigate</color> commands:"));
         sender.sendMessage(miniMessage.deserialize("<gray><required> [optional(default)]</gray>"));
-        sender.sendMessage(miniMessage.deserialize("<yellow>/navigate start <x> <y> <z> [safeMode(true)]</yellow> <gray>-</gray> Start navigating to target location"));
+        sender.sendMessage(miniMessage.deserialize("<yellow>/navigate start <x> <y> <z> [safeMode(true)] [MATERIAL1,MATERIAL2]</yellow> <gray>-</gray> Start navigating to target location"));
         sender.sendMessage(miniMessage.deserialize("<yellow>/navigate stop</yellow> <gray>-</gray> Stop navigating"));
-        sender.sendMessage(miniMessage.deserialize("<yellow>/navigate startfor <player> <x> <y> <z> [safeMode(true)]</yellow> <gray>-</gray> Start navigating player to target location"));
+        sender.sendMessage(miniMessage.deserialize("<yellow>/navigate startfor <player> <x> <y> <z> [safeMode(true)] [MATERIAL1,MATERIAL2]</yellow> <gray>-</gray> Start navigating player to target location"));
         sender.sendMessage(miniMessage.deserialize("<yellow>/navigate stopfor <player></yellow> <gray>-</gray> Stop navigating player"));
         sender.sendMessage(miniMessage.deserialize("<yellow>/navigate neofetch</yellow> <gray>-</gray> Fun info about the plugin and server"));
     }

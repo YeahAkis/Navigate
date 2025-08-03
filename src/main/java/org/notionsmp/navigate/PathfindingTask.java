@@ -2,11 +2,13 @@ package org.notionsmp.navigate;
 
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
+import java.util.Set;
 
 public class PathfindingTask extends BukkitRunnable {
 
@@ -16,10 +18,10 @@ public class PathfindingTask extends BukkitRunnable {
     private final AStarPathfinder pathfinder;
     private boolean pathFailed = false;
 
-    public PathfindingTask(Player player, Location targetLocation, boolean safeMode) {
+    public PathfindingTask(Player player, Location targetLocation, boolean safeMode, Set<Material> allowedMaterials) {
         this.player = player;
         this.targetLocation = targetLocation;
-        this.pathfinder = new AStarPathfinder(safeMode);
+        this.pathfinder = new AStarPathfinder(safeMode, allowedMaterials);
     }
 
     @Override

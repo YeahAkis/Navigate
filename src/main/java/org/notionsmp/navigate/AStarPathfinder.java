@@ -24,9 +24,11 @@ public class AStarPathfinder {
 
     private static final int MAX_PATHFINDING_ITERATIONS = 100000;
     private final boolean safeMode;
+    private final Set<Material> allowedMaterials;
 
-    public AStarPathfinder(boolean safeMode) {
+    public AStarPathfinder(boolean safeMode, Set<Material> allowedMaterials) {
         this.safeMode = safeMode;
+        this.allowedMaterials = allowedMaterials;
         PASSABLE_MATERIALS.addAll(MaterialSetTag.BUTTONS.getValues());
         PASSABLE_MATERIALS.addAll(MaterialSetTag.FLOWERS.getValues());
         PASSABLE_MATERIALS.addAll(MaterialSetTag.FLOWER_POTS.getValues());
@@ -184,6 +186,12 @@ public class AStarPathfinder {
         Block block = loc.getBlock();
         Block blockAbove = loc.clone().add(0, 1, 0).getBlock();
         Block blockBelow = loc.clone().add(0, -1, 0).getBlock();
+
+        if (allowedMaterials != null && !allowedMaterials.isEmpty()) {
+            if (!allowedMaterials.contains(blockBelow.getType())) {
+                return false;
+            }
+        }
 
         if (MaterialSetTag.CLIMBABLE.getValues().contains(block.getType())) {
             return true;
