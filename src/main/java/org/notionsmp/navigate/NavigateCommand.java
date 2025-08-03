@@ -73,7 +73,6 @@ public class NavigateCommand extends BaseCommand {
         newTask.runTaskTimer(Navigate.getInstance(), 0L, 10L);
         Navigate.getInstance().getActiveNavigations().put(player.getUniqueId(), newTask);
         sender.sendMessage("Navigation started for " + player.getName() + " to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeModeBool);
-        //player.sendMessage("Navigation started to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeModeBool);
     }
 
     @Subcommand("stopfor")
@@ -92,7 +91,6 @@ public class NavigateCommand extends BaseCommand {
             Navigate.getInstance().getActiveNavigations().get(player.getUniqueId()).cancel();
             Navigate.getInstance().getActiveNavigations().remove(player.getUniqueId());
             sender.sendMessage("Navigation stopped for " + player.getName() + ".");
-            //player.sendMessage("Your navigation has been stopped.");
         } else {
             sender.sendMessage(player.getName() + " is not currently navigating.");
         }
