@@ -22,7 +22,7 @@ public class AStarPathfinder {
             Material.SMALL_DRIPLEAF
     );
 
-    private static final int MAX_PATHFINDING_ITERATIONS = 50000;
+    private static final int MAX_PATHFINDING_ITERATIONS = 100000;
     private final boolean safeMode;
 
     public AStarPathfinder(boolean safeMode) {
@@ -91,19 +91,6 @@ public class AStarPathfinder {
             }
         }
         return Collections.emptyList();
-    }
-
-    @SuppressWarnings("unused")
-    private boolean isReachable(Location start, Location end) {
-        Location playerFeet = start.clone();
-        Location playerHead = start.clone().add(0, 1, 0);
-        Location targetFeet = end.clone();
-        Location targetHead = end.clone().add(0, 1, 0);
-
-        return PASSABLE_MATERIALS.contains(playerFeet.getBlock().getType()) &&
-                PASSABLE_MATERIALS.contains(playerHead.getBlock().getType()) &&
-                PASSABLE_MATERIALS.contains(targetFeet.getBlock().getType()) &&
-                PASSABLE_MATERIALS.contains(targetHead.getBlock().getType());
     }
 
     private List<Location> reconstructPath(Node endNode) {

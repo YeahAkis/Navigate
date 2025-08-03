@@ -30,6 +30,9 @@ public class PathfindingTask extends BukkitRunnable {
         }
 
         if (pathFailed) {
+            if (Navigate.getInstance().getActiveNavigations().get(player.getUniqueId()) == null) {
+                this.cancel();
+            }
             return;
         }
 
@@ -49,7 +52,9 @@ public class PathfindingTask extends BukkitRunnable {
                     return;
                 }
                 if (foundPath.isEmpty()) {
-                    player.sendMessage("Destination is inaccessible!");
+                    if (!pathFailed) {
+                        player.sendMessage("Destination is inaccessible!");
+                    }
                     pathFailed = true;
                     cancelNavigation();
                     return;
