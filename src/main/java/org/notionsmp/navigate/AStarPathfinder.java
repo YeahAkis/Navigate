@@ -37,6 +37,7 @@ public class AStarPathfinder {
         PASSABLE_MATERIALS.addAll(MaterialSetTag.WOOL_CARPETS.getValues());
         PASSABLE_MATERIALS.addAll(MaterialSetTag.RAILS.getValues());
         PASSABLE_MATERIALS.addAll(MaterialSetTag.CLIMBABLE.getValues());
+        PASSABLE_MATERIALS.addAll(MaterialSetTag.DOORS.getValues());
     }
 
     public List<Location> findPath(Location start, Location end) {
