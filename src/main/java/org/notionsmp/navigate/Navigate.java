@@ -6,21 +6,20 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.notionsmp.navigate.util.NavigatePlaceholder;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public final class Navigate extends JavaPlugin {
 
     private static Navigate instance;
-    private Map<UUID, PathfindingTask> activeNavigations;
+    private NavigationService navigationService;
     public FoliaLib foliaLib;
 
     @Override
     public void onEnable() {
         instance = this;
         foliaLib = new FoliaLib(this);
-        activeNavigations = new HashMap<>();
+        navigationService = new NavigationService(this);
         PaperCommandManager manager = new PaperCommandManager(this);
         manager.registerCommand(new NavigateCommand());
 
@@ -33,14 +32,15 @@ public final class Navigate extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        for (PathfindingTask task : activeNavigations.values()) {
-            task.cancel();
-        }
-        activeNavigations.clear();
+        navigationService.stopAll();
     }
 
-    public Map<UUID, PathfindingTask> getActiveNavigations() {
-        return activeNavigations;
+    public NavigationService getNavigationService() {
+        return navigationService;
+    }
+
+    public Map<UUID, Navigation> getActiveNavigations() {
+        return navigationService.getRunningMap();
     }
 
     public static Navigate getInstance() { return instance; }

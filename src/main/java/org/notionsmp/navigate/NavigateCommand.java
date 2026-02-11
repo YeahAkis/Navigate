@@ -44,25 +44,19 @@ public class NavigateCommand extends BaseCommand {
             }
         }
 
-        if (Navigate.getInstance().getActiveNavigations().containsKey(player.getUniqueId())) {
-            Navigate.getInstance().getActiveNavigations().get(player.getUniqueId()).cancel();
-            Navigate.getInstance().getActiveNavigations().remove(player.getUniqueId());
+        if (Navigate.getInstance().getNavigationService().stop(player)) {
             player.sendMessage("Your previous navigation has been stopped.");
         }
 
         Location targetLocation = new Location(player.getWorld(), x, y, z);
-        PathfindingTask newTask = new PathfindingTask(player, targetLocation, safeMode, materialSet);
-        newTask.runTaskTimer(Navigate.getInstance(), 0L, 10L);
-        Navigate.getInstance().getActiveNavigations().put(player.getUniqueId(), newTask);
+        Navigate.getInstance().getNavigationService().start(player, targetLocation, safeMode, materialSet);
         player.sendMessage("Navigation started to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeMode);
     }
 
     @Subcommand("stop")
     @Description("Stop navigating")
     public void onStop(Player player) {
-        if (Navigate.getInstance().getActiveNavigations().containsKey(player.getUniqueId())) {
-            Navigate.getInstance().getActiveNavigations().get(player.getUniqueId()).cancel();
-            Navigate.getInstance().getActiveNavigations().remove(player.getUniqueId());
+        if (Navigate.getInstance().getNavigationService().stop(player)) {
             player.sendMessage("Navigation stopped.");
         } else {
             player.sendMessage("You are not currently navigating.");
@@ -98,16 +92,12 @@ public class NavigateCommand extends BaseCommand {
             }
         }
 
-        if (Navigate.getInstance().getActiveNavigations().containsKey(player.getUniqueId())) {
-            Navigate.getInstance().getActiveNavigations().get(player.getUniqueId()).cancel();
-            Navigate.getInstance().getActiveNavigations().remove(player.getUniqueId());
+        if (Navigate.getInstance().getNavigationService().stop(player)) {
             sender.sendMessage("Previous navigation for " + player.getName() + " has been stopped.");
         }
 
         Location targetLocation = new Location(player.getWorld(), x, y, z);
-        PathfindingTask newTask = new PathfindingTask(player, targetLocation, safeMode, materialSet);
-        newTask.runTaskTimer(Navigate.getInstance(), 0L, 10L);
-        Navigate.getInstance().getActiveNavigations().put(player.getUniqueId(), newTask);
+        Navigate.getInstance().getNavigationService().start(player, targetLocation, safeMode, materialSet);
         sender.sendMessage("Navigation started for " + player.getName() + " to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeMode);
     }
 
@@ -123,9 +113,7 @@ public class NavigateCommand extends BaseCommand {
             return;
         }
 
-        if (Navigate.getInstance().getActiveNavigations().containsKey(player.getUniqueId())) {
-            Navigate.getInstance().getActiveNavigations().get(player.getUniqueId()).cancel();
-            Navigate.getInstance().getActiveNavigations().remove(player.getUniqueId());
+        if (Navigate.getInstance().getNavigationService().stop(player)) {
             sender.sendMessage("Navigation stopped for " + player.getName() + ".");
         } else {
             sender.sendMessage(player.getName() + " is not currently navigating.");

@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.notionsmp.navigate.AStarPathfinder;
 import org.notionsmp.navigate.Navigate;
-import org.notionsmp.navigate.PathfindingTask;
+import org.notionsmp.navigate.Navigation;
 
 public class NavigatePlaceholder extends PlaceholderExpansion {
 
@@ -29,10 +29,10 @@ public class NavigatePlaceholder extends PlaceholderExpansion {
     public String onPlaceholderRequest(Player player, @NotNull String params) {
         if (player == null) return "No player";
 
-        PathfindingTask task = Navigate.getInstance().getActiveNavigations().get(player.getUniqueId());
-        if (task == null || task.getTargetLocation() == null) return "No target";
+        Navigation navigation = Navigate.getInstance().getNavigationService().getNavigation(player.getUniqueId());
+        if (navigation == null || navigation.getTargetLocation() == null) return "No target";
 
-        Location target = task.getTargetLocation();
+        Location target = navigation.getTargetLocation();
 
         return switch (params.toLowerCase()) {
             case "direction" -> AStarPathfinder.getDirection(player.getLocation(), target);
