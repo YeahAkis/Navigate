@@ -14,14 +14,19 @@ public class PathfindingTask extends BukkitRunnable {
 
     private final Player player;
     private final Location targetLocation;
-    private List<Location> currentPath;
     private final AStarPathfinder pathfinder;
-    private boolean pathFailed = false;
+
+    private List<Location> currentPath;
+    private int lastChunkX;
+    private int lastChunkZ;
 
     public PathfindingTask(Player player, Location targetLocation, boolean safeMode, Set<Material> allowedMaterials) {
         this.player = player;
         this.targetLocation = targetLocation;
         this.pathfinder = new AStarPathfinder(safeMode, allowedMaterials);
+
+        this.lastChunkX = player.getLocation().getChunk().getX();
+        this.lastChunkZ = player.getLocation().getChunk().getZ();
     }
 
     @Override
@@ -31,33 +36,30 @@ public class PathfindingTask extends BukkitRunnable {
             return;
         }
 
-        if (pathFailed) {
-            if (Navigate.getInstance().getActiveNavigations().get(player.getUniqueId()) == null) {
-                this.cancel();
-            }
-            return;
-        }
-
         if (player.getLocation().distanceSquared(targetLocation) < 4) {
             player.sendMessage("You have reached your destination!");
             cancelNavigation();
             return;
         }
 
+        int cx = player.getLocation().getChunk().getX();
+        int cz = player.getLocation().getChunk().getZ();
+
+        if (currentPath != null && !currentPath.isEmpty() && cx == lastChunkX && cz == lastChunkZ) {
+            displayPathParticles();
+            return;
+        }
+
+        lastChunkX = cx;
+        lastChunkZ = cz;
+
+        Location playerBlockLoc = player.getLocation().getBlock().getLocation();
+        Location targetBlockLoc = targetLocation.getBlock().getLocation();
+
         Navigate.getInstance().foliaLib.getScheduler().runAsync(task -> {
-            Location playerBlockLoc = player.getLocation().getBlock().getLocation();
-            Location targetBlockLoc = targetLocation.getBlock().getLocation();
             List<Location> foundPath = pathfinder.findPath(playerBlockLoc, targetBlockLoc);
             Navigate.getInstance().foliaLib.getScheduler().runNextTick(nextTask -> {
                 if (!player.isOnline()) {
-                    cancelNavigation();
-                    return;
-                }
-                if (foundPath.isEmpty()) {
-                    if (!pathFailed) {
-                        player.sendMessage("Destination is inaccessible!");
-                    }
-                    pathFailed = true;
                     cancelNavigation();
                     return;
                 }
@@ -68,12 +70,24 @@ public class PathfindingTask extends BukkitRunnable {
     }
 
     private void displayPathParticles() {
+        if (currentPath == null || currentPath.isEmpty()) return;
+
+        Particle.DustOptions dustOptions = new Particle.DustOptions(
+                Color.fromRGB(220, 20, 60),
+                1.0f
+        );
+
         for (Location pathBlock : currentPath) {
-            Particle.DustOptions dustOptions = new Particle.DustOptions(
-                    Color.fromRGB(220, 20, 60),
-                    1.0f
+            player.spawnParticle(
+                    Particle.DUST,
+                    pathBlock.clone().add(0.5, 0.5, 0.5),
+                    3,
+                    0,
+                    0,
+                    0,
+                    0,
+                    dustOptions
             );
-            player.spawnParticle(Particle.DUST, pathBlock.clone().add(0.5, 0.5, 0.5), 5, 0, 0, 0, 0, dustOptions);
         }
     }
 
