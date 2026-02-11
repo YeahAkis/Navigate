@@ -8,6 +8,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Represents a single running navigation session for a player.
+ */
 public class Navigation {
     private final Navigate plugin;
     private final Player player;
@@ -33,22 +36,47 @@ public class Navigation {
         this.task = new PathfindingTask(plugin, this);
     }
 
+    /**
+     * Returns the player associated with this navigation.
+     *
+     * @return the navigating player
+     */
     public Player getPlayer() {
         return player;
     }
 
+    /**
+     * Returns the target location for this navigation.
+     *
+     * @return target location (cloned)
+     */
     public Location getTargetLocation() {
         return targetLocation.clone();
     }
 
+    /**
+     * Indicates whether safe mode is enabled for this navigation.
+     *
+     * @return true if safe mode is enabled
+     */
     public boolean isSafeMode() {
         return safeMode;
     }
 
+    /**
+     * Returns the allowed ground materials for this navigation, if any.
+     *
+     * @return immutable set of allowed materials, or null if not restricted
+     */
     public Set<Material> getAllowedMaterials() {
         return allowedMaterials == null ? null : Set.copyOf(allowedMaterials);
     }
 
+    /**
+     * Returns the most recently computed path for this navigation.
+     *
+     * @return immutable list of path points, or empty if none computed yet
+     */
     public List<Location> getCurrentPath() {
         return currentPath == null ? List.of() : List.copyOf(currentPath);
     }
