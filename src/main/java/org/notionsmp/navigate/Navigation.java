@@ -23,6 +23,8 @@ public class Navigation {
     private List<Location> currentPath;
     private int lastChunkX;
     private int lastChunkZ;
+    private boolean searching;
+    private long retryAt;
 
     Navigation(Navigate plugin, Player player, Location targetLocation, boolean safeMode, Set<Material> allowedMaterials) {
         this.plugin = plugin;
@@ -104,6 +106,22 @@ public class Navigation {
     void setLastChunk(int lastChunkX, int lastChunkZ) {
         this.lastChunkX = lastChunkX;
         this.lastChunkZ = lastChunkZ;
+    }
+
+    boolean isSearching() {
+        return searching;
+    }
+
+    void setSearching(boolean searching) {
+        this.searching = searching;
+    }
+
+    long getRetryAt() {
+        return retryAt;
+    }
+
+    void setRetryAt(long retryAt) {
+        this.retryAt = retryAt;
     }
 
     void start() {
