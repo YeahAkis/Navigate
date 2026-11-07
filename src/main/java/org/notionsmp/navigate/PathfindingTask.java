@@ -5,11 +5,10 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
 
-public class PathfindingTask extends BukkitRunnable {
+public class PathfindingTask implements Runnable {
 
     private static final int SEARCH_RADIUS = 96;
     private static final int SEARCH_MARGIN = 24;
@@ -95,7 +94,7 @@ public class PathfindingTask extends BukkitRunnable {
                 foundPath = List.of();
             }
             List<Location> result = foundPath;
-            plugin.foliaLib.getScheduler().runNextTick(nextTask -> {
+            plugin.foliaLib.getScheduler().runAtEntity(player, nextTask -> {
                 navigation.setSearching(false);
                 if (!player.isOnline()) {
                     plugin.getNavigationService().stop(player.getUniqueId());

@@ -1,5 +1,6 @@
 package org.notionsmp.navigate;
 
+import com.tcoded.folialib.wrapper.task.WrappedTask;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -7,6 +8,7 @@ import org.bukkit.entity.Player;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Represents a single running navigation session for a player.
@@ -21,12 +23,14 @@ public class Navigation {
     private final boolean follow;
     private final PathfindingTask task;
     private final FollowTask followTask;
+    private WrappedTask pathTask;
+    private WrappedTask moveTask;
 
-    private List<Location> currentPath;
-    private int lastChunkX;
-    private int lastChunkZ;
-    private boolean searching;
-    private long retryAt;
+    private volatile List<Location> currentPath;
+    private volatile int lastChunkX = Integer.MIN_VALUE;
+    private volatile int lastChunkZ = Integer.MIN_VALUE;
+    private volatile boolean searching;
+    private volatile long retryAt;
 
     Navigation(Navigate plugin, Player player, Location targetLocation, boolean safeMode, Set<Material> allowedMaterials, boolean follow) {
         this.plugin = plugin;
@@ -35,8 +39,6 @@ public class Navigation {
         this.safeMode = safeMode;
         this.allowedMaterials = normalizeMaterials(allowedMaterials);
         this.pathfinder = new AStarPathfinder(safeMode, this.allowedMaterials);
-        this.lastChunkX = player.getLocation().getChunk().getX();
-        this.lastChunkZ = player.getLocation().getChunk().getZ();
         this.follow = follow;
         this.task = new PathfindingTask(plugin, this);
         this.followTask = follow ? new FollowTask(plugin, this) : null;
@@ -144,16 +146,19 @@ public class Navigation {
     }
 
     void start() {
-        task.runTaskTimer(plugin, 0L, 10L);
+        UUID playerId = player.getUniqueId();
+        pathTask = plugin.foliaLib.getScheduler().runAtEntityTimer(player, task, () -> plugin.getNavigationService().stop(playerId), 1L, 10L);
         if (followTask != null) {
-            followTask.runTaskTimer(plugin, 1L, 1L);
+            moveTask = plugin.foliaLib.getScheduler().runAtEntityTimer(player, followTask, 1L, 1L);
         }
     }
 
     void stop() {
-        task.cancel();
-        if (followTask != null) {
-            followTask.cancel();
+        if (pathTask != null) {
+            pathTask.cancel();
+        }
+        if (moveTask != null) {
+            moveTask.cancel();
         }
     }
 

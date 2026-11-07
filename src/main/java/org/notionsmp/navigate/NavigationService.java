@@ -6,9 +6,9 @@ import org.bukkit.entity.Player;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 
 /**
@@ -20,7 +20,7 @@ public final class NavigationService {
 
     NavigationService(Navigate plugin) {
         this.plugin = plugin;
-        this.navigations = new HashMap<>();
+        this.navigations = new ConcurrentHashMap<>();
     }
 
     /**

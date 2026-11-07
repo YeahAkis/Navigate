@@ -1,5 +1,6 @@
 package org.notionsmp.navigate;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -33,7 +34,7 @@ final class WorldSnapshot {
         WorldSnapshot snapshot = new WorldSnapshot(world, minX, maxX, minZ, maxZ);
         for (int cx = minX >> 4; cx <= maxX >> 4; cx++) {
             for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
-                if (world.isChunkLoaded(cx, cz)) {
+                if (Bukkit.isOwnedByCurrentRegion(world, cx, cz) && world.isChunkLoaded(cx, cz)) {
                     Chunk chunk = world.getChunkAt(cx, cz);
                     snapshot.chunks.put(key(cx, cz), chunk.getChunkSnapshot(false, false, false));
                 }

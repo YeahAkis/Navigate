@@ -36,13 +36,7 @@ public class NavigateCommand extends BaseCommand {
             return;
         }
 
-        if (Navigate.getInstance().getNavigationService().stop(player)) {
-            player.sendMessage("Your previous navigation has been stopped.");
-        }
-
-        Location targetLocation = new Location(player.getWorld(), x, y, z);
-        Navigate.getInstance().getNavigationService().start(player, targetLocation, options.safeMode(), options.materials(), options.follow());
-        player.sendMessage("Navigation started to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + options.safeMode() + ", follow: " + options.follow());
+        begin(player, player, x, y, z, options);
     }
 
     @Subcommand("stop")
@@ -67,15 +61,7 @@ public class NavigateCommand extends BaseCommand {
             return;
         }
 
-        Options options = parseOptions(args);
-
-        if (Navigate.getInstance().getNavigationService().stop(player)) {
-            sender.sendMessage("Previous navigation for " + player.getName() + " has been stopped.");
-        }
-
-        Location targetLocation = new Location(player.getWorld(), x, y, z);
-        Navigate.getInstance().getNavigationService().start(player, targetLocation, options.safeMode(), options.materials(), options.follow());
-        sender.sendMessage("Navigation started for " + player.getName() + " to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + options.safeMode() + ", follow: " + options.follow());
+        begin(sender, player, x, y, z, parseOptions(args));
     }
 
     @Subcommand("stopfor")
@@ -137,6 +123,21 @@ public class NavigateCommand extends BaseCommand {
         sender.sendMessage(miniMessage.deserialize("<yellow>/navigate startfor <player> <x> <y> <z> [safeMode(true)] [follow] [MATERIAL1,MATERIAL2]</yellow> <gray>-</gray> Start navigating player to target location"));
         sender.sendMessage(miniMessage.deserialize("<yellow>/navigate stopfor <player></yellow> <gray>-</gray> Stop navigating player"));
         sender.sendMessage(miniMessage.deserialize("<yellow>/navigate neofetch</yellow> <gray>-</gray> Fun info about the plugin and server"));
+    }
+
+    private static void begin(CommandSender sender, Player player, int x, int y, int z, Options options) {
+        Navigate plugin = Navigate.getInstance();
+        plugin.foliaLib.getScheduler().runAtEntity(player, task -> {
+            boolean self = sender.equals(player);
+            if (plugin.getNavigationService().stop(player)) {
+                sender.sendMessage(self ? "Your previous navigation has been stopped." : "Previous navigation for " + player.getName() + " has been stopped.");
+            }
+
+            Location targetLocation = new Location(player.getWorld(), x, y, z);
+            plugin.getNavigationService().start(player, targetLocation, options.safeMode(), options.materials(), options.follow());
+            String details = "X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + options.safeMode() + ", follow: " + options.follow();
+            sender.sendMessage(self ? "Navigation started to " + details : "Navigation started for " + player.getName() + " to " + details);
+        });
     }
 
     private record Options(boolean safeMode, boolean follow, Set<Material> materials) {}

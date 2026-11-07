@@ -4,12 +4,11 @@ import org.bukkit.Location;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.List;
 
-public class FollowTask extends BukkitRunnable {
+public class FollowTask implements Runnable {
 
     private static final double JUMP_VELOCITY = 0.42;
     private static final double CLIMB_VELOCITY = 0.2;
