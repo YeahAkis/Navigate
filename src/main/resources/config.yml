@@ -9,3 +9,6 @@ strings:
     east: "East"
     south-east: "South-East"
     unknown: "N/A"
+
+follow:
+  speed: 0.22

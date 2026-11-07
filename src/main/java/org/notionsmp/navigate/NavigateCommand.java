@@ -13,7 +13,9 @@ import org.bukkit.entity.Player;
 
 import java.lang.management.ManagementFactory;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,25 +25,15 @@ public class NavigateCommand extends BaseCommand {
     MiniMessage miniMessage = MiniMessage.miniMessage();
 
     @Subcommand("start")
-    @Syntax("[x] [y] [z] (safeMode) [materials]")
-    @CommandCompletion("@nothing @nothing @nothing true|false @nothing")
+    @Syntax("[x] [y] [z] (safeMode) (follow) [materials]")
+    @CommandCompletion("@nothing @nothing @nothing true|false|follow follow|@nothing")
     @Description("Start navigating to target location")
     public void onStart(Player player, int x, int y, int z, @Optional String[] args) {
-        boolean safeMode = true;
-        Set<Material> materialSet = null;
+        Options options = parseOptions(args);
 
-        if (args != null && args.length > 0) {
-            try {
-                safeMode = !args[0].equalsIgnoreCase("false");
-            } catch (Exception ignored) {}
-
-            if (args.length > 1) {
-                String materials = String.join("", Arrays.copyOfRange(args, 1, args.length));
-                materialSet = Arrays.stream(materials.split(","))
-                        .map(String::toUpperCase)
-                        .map(Material::valueOf)
-                        .collect(Collectors.toSet());
-            }
+        if (options.follow() && !player.hasPermission("navigate.follow")) {
+            player.sendMessage("You do not have permission to be moved along the path.");
+            return;
         }
 
         if (Navigate.getInstance().getNavigationService().stop(player)) {
@@ -49,8 +41,8 @@ public class NavigateCommand extends BaseCommand {
         }
 
         Location targetLocation = new Location(player.getWorld(), x, y, z);
-        Navigate.getInstance().getNavigationService().start(player, targetLocation, safeMode, materialSet);
-        player.sendMessage("Navigation started to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeMode);
+        Navigate.getInstance().getNavigationService().start(player, targetLocation, options.safeMode(), options.materials(), options.follow());
+        player.sendMessage("Navigation started to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + options.safeMode() + ", follow: " + options.follow());
     }
 
     @Subcommand("stop")
@@ -65,8 +57,8 @@ public class NavigateCommand extends BaseCommand {
 
     @Subcommand("startfor")
     @CommandPermission("navigate.use.others")
-    @Syntax("<player> <x> <y> <z> (safeMode)")
-    @CommandCompletion("@players @nothing @nothing @nothing true|false")
+    @Syntax("<player> <x> <y> <z> (safeMode) (follow) [materials]")
+    @CommandCompletion("@players @nothing @nothing @nothing true|false|follow follow|@nothing")
     @Description("Start navigating player to target location")
     public void onStartFor(CommandSender sender, String playerName, int x, int y, int z, @Optional String[] args) {
         Player player = Bukkit.getPlayer(playerName);
@@ -75,30 +67,15 @@ public class NavigateCommand extends BaseCommand {
             return;
         }
 
-        boolean safeMode = true;
-        Set<Material> materialSet = null;
-
-        if (args != null && args.length > 0) {
-            try {
-                safeMode = !args[0].equalsIgnoreCase("false");
-            } catch (Exception ignored) {}
-
-            if (args.length > 1) {
-                String materials = String.join("", Arrays.copyOfRange(args, 1, args.length));
-                materialSet = Arrays.stream(materials.split(","))
-                        .map(String::toUpperCase)
-                        .map(Material::valueOf)
-                        .collect(Collectors.toSet());
-            }
-        }
+        Options options = parseOptions(args);
 
         if (Navigate.getInstance().getNavigationService().stop(player)) {
             sender.sendMessage("Previous navigation for " + player.getName() + " has been stopped.");
         }
 
         Location targetLocation = new Location(player.getWorld(), x, y, z);
-        Navigate.getInstance().getNavigationService().start(player, targetLocation, safeMode, materialSet);
-        sender.sendMessage("Navigation started for " + player.getName() + " to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + safeMode);
+        Navigate.getInstance().getNavigationService().start(player, targetLocation, options.safeMode(), options.materials(), options.follow());
+        sender.sendMessage("Navigation started for " + player.getName() + " to X:" + x + " Y:" + y + " Z:" + z + " with safe mode: " + options.safeMode() + ", follow: " + options.follow());
     }
 
     @Subcommand("stopfor")
@@ -155,11 +132,44 @@ public class NavigateCommand extends BaseCommand {
     public void onHelp(CommandSender sender) {
         sender.sendMessage(miniMessage.deserialize("<color:#006565>Navigate</color> commands:"));
         sender.sendMessage(miniMessage.deserialize("<gray><required> [optional(default)]</gray>"));
-        sender.sendMessage(miniMessage.deserialize("<yellow>/navigate start <x> <y> <z> [safeMode(true)] [MATERIAL1,MATERIAL2]</yellow> <gray>-</gray> Start navigating to target location"));
+        sender.sendMessage(miniMessage.deserialize("<yellow>/navigate start <x> <y> <z> [safeMode(true)] [follow] [MATERIAL1,MATERIAL2]</yellow> <gray>-</gray> Start navigating to target location, follow moves you along the path"));
         sender.sendMessage(miniMessage.deserialize("<yellow>/navigate stop</yellow> <gray>-</gray> Stop navigating"));
-        sender.sendMessage(miniMessage.deserialize("<yellow>/navigate startfor <player> <x> <y> <z> [safeMode(true)] [MATERIAL1,MATERIAL2]</yellow> <gray>-</gray> Start navigating player to target location"));
+        sender.sendMessage(miniMessage.deserialize("<yellow>/navigate startfor <player> <x> <y> <z> [safeMode(true)] [follow] [MATERIAL1,MATERIAL2]</yellow> <gray>-</gray> Start navigating player to target location"));
         sender.sendMessage(miniMessage.deserialize("<yellow>/navigate stopfor <player></yellow> <gray>-</gray> Stop navigating player"));
         sender.sendMessage(miniMessage.deserialize("<yellow>/navigate neofetch</yellow> <gray>-</gray> Fun info about the plugin and server"));
+    }
+
+    private record Options(boolean safeMode, boolean follow, Set<Material> materials) {}
+
+    private static Options parseOptions(String[] args) {
+        boolean safeMode = true;
+        boolean follow = false;
+        Set<Material> materials = null;
+
+        if (args != null) {
+            List<String> rest = new ArrayList<>();
+            for (String arg : args) {
+                if (arg.equalsIgnoreCase("follow")) {
+                    follow = true;
+                } else {
+                    rest.add(arg);
+                }
+            }
+
+            if (!rest.isEmpty()) {
+                safeMode = !rest.get(0).equalsIgnoreCase("false");
+            }
+
+            if (rest.size() > 1) {
+                String joined = String.join("", rest.subList(1, rest.size()));
+                materials = Arrays.stream(joined.split(","))
+                        .map(String::toUpperCase)
+                        .map(Material::valueOf)
+                        .collect(Collectors.toSet());
+            }
+        }
+
+        return new Options(safeMode, follow, materials);
     }
 
     public static String formatMillis(long milliseconds) {

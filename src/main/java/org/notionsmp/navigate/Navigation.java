@@ -18,7 +18,9 @@ public class Navigation {
     private final boolean safeMode;
     private final Set<Material> allowedMaterials;
     private final AStarPathfinder pathfinder;
+    private final boolean follow;
     private final PathfindingTask task;
+    private final FollowTask followTask;
 
     private List<Location> currentPath;
     private int lastChunkX;
@@ -26,7 +28,7 @@ public class Navigation {
     private boolean searching;
     private long retryAt;
 
-    Navigation(Navigate plugin, Player player, Location targetLocation, boolean safeMode, Set<Material> allowedMaterials) {
+    Navigation(Navigate plugin, Player player, Location targetLocation, boolean safeMode, Set<Material> allowedMaterials, boolean follow) {
         this.plugin = plugin;
         this.player = player;
         this.targetLocation = targetLocation.clone();
@@ -35,7 +37,9 @@ public class Navigation {
         this.pathfinder = new AStarPathfinder(safeMode, this.allowedMaterials);
         this.lastChunkX = player.getLocation().getChunk().getX();
         this.lastChunkZ = player.getLocation().getChunk().getZ();
+        this.follow = follow;
         this.task = new PathfindingTask(plugin, this);
+        this.followTask = follow ? new FollowTask(plugin, this) : null;
     }
 
     /**
@@ -63,6 +67,15 @@ public class Navigation {
      */
     public boolean isSafeMode() {
         return safeMode;
+    }
+
+    /**
+     * Indicates whether the player is moved along the path.
+     *
+     * @return true if the player is pushed along the path
+     */
+    public boolean isFollow() {
+        return follow;
     }
 
     /**
@@ -124,12 +137,24 @@ public class Navigation {
         this.retryAt = retryAt;
     }
 
+    void requestReplan() {
+        lastChunkX = Integer.MIN_VALUE;
+        lastChunkZ = Integer.MIN_VALUE;
+        retryAt = 0;
+    }
+
     void start() {
         task.runTaskTimer(plugin, 0L, 10L);
+        if (followTask != null) {
+            followTask.runTaskTimer(plugin, 1L, 1L);
+        }
     }
 
     void stop() {
         task.cancel();
+        if (followTask != null) {
+            followTask.cancel();
+        }
     }
 
     private static Set<Material> normalizeMaterials(Set<Material> allowedMaterials) {

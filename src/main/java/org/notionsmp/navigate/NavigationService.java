@@ -33,8 +33,22 @@ public final class NavigationService {
      * @return the newly started navigation
      */
     public Navigation start(Player player, Location targetLocation, boolean safeMode, Set<Material> allowedMaterials) {
+        return start(player, targetLocation, safeMode, allowedMaterials, false);
+    }
+
+    /**
+     * Starts a navigation for the given player, replacing any existing one.
+     *
+     * @param player player to navigate
+     * @param targetLocation destination location
+     * @param safeMode whether safe mode is enabled
+     * @param allowedMaterials allowed ground materials, or null for no restriction
+     * @param follow whether the player is pushed along the path
+     * @return the newly started navigation
+     */
+    public Navigation start(Player player, Location targetLocation, boolean safeMode, Set<Material> allowedMaterials, boolean follow) {
         stop(player.getUniqueId());
-        Navigation navigation = new Navigation(plugin, player, targetLocation, safeMode, allowedMaterials);
+        Navigation navigation = new Navigation(plugin, player, targetLocation, safeMode, allowedMaterials, follow);
         navigations.put(player.getUniqueId(), navigation);
         navigation.start();
         return navigation;
