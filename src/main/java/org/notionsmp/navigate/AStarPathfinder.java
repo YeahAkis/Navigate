@@ -37,6 +37,10 @@ public class AStarPathfinder {
                 Material.SWEET_BERRY_BUSH, Material.GLOW_LICHEN, Material.SCULK_VEIN,
                 Material.SMALL_DRIPLEAF
         );
+        Material leafLitter = Material.matchMaterial("LEAF_LITTER");
+        if (leafLitter != null) {
+            passable.add(leafLitter);
+        }
         passable.addAll(MaterialSetTag.BUTTONS.getValues());
         passable.addAll(MaterialSetTag.FLOWERS.getValues());
         passable.addAll(MaterialSetTag.FLOWER_POTS.getValues());

@@ -16,6 +16,7 @@ public class FollowTask implements Runnable {
     private static final double SWIM_VELOCITY = 0.12;
     private static final double JUMP_RANGE = 1.6;
     private static final double OFF_PATH_SQ = 9;
+    private static final float MAX_TURN = 30f;
     private static final int LOOKAHEAD = 8;
     private static final int STUCK_TICKS = 40;
 
@@ -98,6 +99,13 @@ public class FollowTask implements Runnable {
             }
         } else if (rise > 0 && player.isOnGround() && horizontal < JUMP_RANGE) {
             vy = JUMP_VELOCITY;
+        }
+
+        if (horizontal > 0.3) {
+            float target = AStarPathfinder.getYaw(position, new Location(position.getWorld(), position.getX() + dx, position.getY(), position.getZ() + dz));
+            float delta = ((target - position.getYaw()) % 360 + 540) % 360 - 180;
+            float yaw = position.getYaw() + Math.max(-MAX_TURN, Math.min(MAX_TURN, delta));
+            player.setRotation(yaw, position.getPitch());
         }
 
         player.setVelocity(new Vector(vx, vy, vz));
