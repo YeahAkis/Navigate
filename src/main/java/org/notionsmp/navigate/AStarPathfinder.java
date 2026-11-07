@@ -3,129 +3,306 @@ package org.notionsmp.navigate;
 import com.destroystokyo.paper.MaterialSetTag;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
-import java.util.*;
+import org.bukkit.World;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Set;
 
 public class AStarPathfinder {
 
-    private static final Set<Material> PASSABLE_MATERIALS = EnumSet.of(
-            Material.AIR, Material.CAVE_AIR, Material.VOID_AIR,
-            Material.WATER, Material.LAVA,
-            Material.SHORT_GRASS, Material.TALL_GRASS, Material.FERN, Material.LARGE_FERN,
-            Material.COBWEB, Material.TRIPWIRE,
-            Material.TORCH, Material.WALL_TORCH, Material.REDSTONE_TORCH, Material.REDSTONE_WALL_TORCH,
-            Material.LEVER,
-            Material.SUGAR_CANE, Material.KELP, Material.SEAGRASS, Material.TALL_SEAGRASS,
-            Material.REDSTONE_WIRE, Material.REPEATER, Material.COMPARATOR,
-            Material.SNOW, Material.BAMBOO_SAPLING,
-            Material.SWEET_BERRY_BUSH, Material.GLOW_LICHEN, Material.SCULK_VEIN,
-            Material.SMALL_DRIPLEAF
-    );
+    private static final boolean[] PASSABLE;
+    private static final boolean[] SOLID;
+    private static final boolean[] CLIMBABLE;
 
-    private static final int MAX_PATHFINDING_ITERATIONS = 100000;
+    static {
+        Set<Material> passable = EnumSet.of(
+                Material.AIR, Material.CAVE_AIR, Material.VOID_AIR,
+                Material.WATER, Material.LAVA,
+                Material.SHORT_GRASS, Material.TALL_GRASS, Material.FERN, Material.LARGE_FERN,
+                Material.COBWEB, Material.TRIPWIRE,
+                Material.TORCH, Material.WALL_TORCH, Material.REDSTONE_TORCH, Material.REDSTONE_WALL_TORCH,
+                Material.LEVER,
+                Material.SUGAR_CANE, Material.KELP, Material.SEAGRASS, Material.TALL_SEAGRASS,
+                Material.REDSTONE_WIRE, Material.REPEATER, Material.COMPARATOR,
+                Material.SNOW, Material.BAMBOO_SAPLING,
+                Material.SWEET_BERRY_BUSH, Material.GLOW_LICHEN, Material.SCULK_VEIN,
+                Material.SMALL_DRIPLEAF
+        );
+        passable.addAll(MaterialSetTag.BUTTONS.getValues());
+        passable.addAll(MaterialSetTag.FLOWERS.getValues());
+        passable.addAll(MaterialSetTag.FLOWER_POTS.getValues());
+        passable.addAll(MaterialSetTag.PRESSURE_PLATES.getValues());
+        passable.addAll(MaterialSetTag.WOOL_CARPETS.getValues());
+        passable.addAll(MaterialSetTag.RAILS.getValues());
+        passable.addAll(MaterialSetTag.CLIMBABLE.getValues());
+        passable.addAll(MaterialSetTag.DOORS.getValues());
+
+        Material[] materials = Material.values();
+        PASSABLE = new boolean[materials.length];
+        SOLID = new boolean[materials.length];
+        CLIMBABLE = new boolean[materials.length];
+        Set<Material> climbable = MaterialSetTag.CLIMBABLE.getValues();
+        for (Material material : materials) {
+            if (material.isLegacy()) {
+                continue;
+            }
+            PASSABLE[material.ordinal()] = passable.contains(material);
+            SOLID[material.ordinal()] = material.isSolid();
+            CLIMBABLE[material.ordinal()] = climbable.contains(material);
+        }
+    }
+
+    private static final int MAX_ITERATIONS = 40000;
     private static final int MAX_PRE_PATHFINDING_RADIUS = 32;
+    private static final double HEURISTIC_WEIGHT = 1.5;
+    private static final double SQRT2 = Math.sqrt(2);
+    private static final double SQRT3 = Math.sqrt(3);
+
     private final boolean safeMode;
-    private final Set<Material> allowedMaterials;
+    private final boolean[] allowed;
 
     public AStarPathfinder(boolean safeMode, Set<Material> allowedMaterials) {
         this.safeMode = safeMode;
-        this.allowedMaterials = allowedMaterials;
-        PASSABLE_MATERIALS.addAll(MaterialSetTag.BUTTONS.getValues());
-        PASSABLE_MATERIALS.addAll(MaterialSetTag.FLOWERS.getValues());
-        PASSABLE_MATERIALS.addAll(MaterialSetTag.FLOWER_POTS.getValues());
-        PASSABLE_MATERIALS.addAll(MaterialSetTag.PRESSURE_PLATES.getValues());
-        PASSABLE_MATERIALS.addAll(MaterialSetTag.WOOL_CARPETS.getValues());
-        PASSABLE_MATERIALS.addAll(MaterialSetTag.RAILS.getValues());
-        PASSABLE_MATERIALS.addAll(MaterialSetTag.CLIMBABLE.getValues());
-        PASSABLE_MATERIALS.addAll(MaterialSetTag.DOORS.getValues());
+        if (allowedMaterials != null && !allowedMaterials.isEmpty()) {
+            this.allowed = new boolean[Material.values().length];
+            for (Material material : allowedMaterials) {
+                this.allowed[material.ordinal()] = true;
+            }
+        } else {
+            this.allowed = null;
+        }
     }
 
-    public List<Location> findPath(Location start, Location end) {
-        if (!start.getWorld().equals(end.getWorld())) {
+    List<Location> findPath(WorldSnapshot snapshot, Location start, Location end) {
+        World world = snapshot.getWorld();
+        if (!world.equals(start.getWorld()) || !world.equals(end.getWorld())) {
             return Collections.emptyList();
         }
 
-        List<Location> prePath = new ArrayList<>();
-        Location actualStart = start;
-        if (allowedMaterials != null && !allowedMaterials.isEmpty()) {
-            Location blockBelowStart = start.clone().subtract(0, 1, 0);
-            if (!allowedMaterials.contains(blockBelowStart.getBlock().getType())) {
-                prePath = findPathToClosestAllowedBlock(start);
-                if (prePath.isEmpty()) {
-                    return Collections.emptyList();
+        int sx = start.getBlockX();
+        int sy = start.getBlockY();
+        int sz = start.getBlockZ();
+        int ex = end.getBlockX();
+        int ey = end.getBlockY();
+        int ez = end.getBlockZ();
+
+        List<Location> prePath = Collections.emptyList();
+        if (allowed != null && !allowed[snapshot.get(sx, sy - 1, sz).ordinal()]) {
+            Node reached = findClosestAllowed(snapshot, sx, sy, sz);
+            if (reached == null) {
+                return Collections.emptyList();
+            }
+            prePath = toLocations(world, reached);
+            sx = reached.x;
+            sy = reached.y;
+            sz = reached.z;
+        }
+
+        PriorityQueue<Node> openSet = new PriorityQueue<>((a, b) -> Double.compare(a.f, b.f));
+        Map<Long, Node> nodes = new HashMap<>();
+
+        Node startNode = new Node(sx, sy, sz, null, 0, heuristic(sx, sy, sz, ex, ey, ez));
+        openSet.add(startNode);
+        nodes.put(startNode.key(), startNode);
+
+        Node best = startNode;
+        int iterations = 0;
+
+        while (!openSet.isEmpty() && iterations < MAX_ITERATIONS) {
+            Node current = openSet.poll();
+            if (current.closed || nodes.get(current.key()) != current) {
+                continue;
+            }
+            current.closed = true;
+            iterations++;
+
+            if (current.x == ex && current.y == ey && current.z == ez) {
+                return join(prePath, toLocations(world, current));
+            }
+
+            if (current.h < best.h) {
+                best = current;
+            }
+
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    for (int dy = -1; dy <= 1; dy++) {
+                        if (dx == 0 && dy == 0 && dz == 0) {
+                            continue;
+                        }
+                        int nx = current.x + dx;
+                        int ny = current.y + dy;
+                        int nz = current.z + dz;
+                        if (!snapshot.contains(nx, nz)) {
+                            continue;
+                        }
+                        long key = Node.pack(nx, ny, nz);
+                        Node existing = nodes.get(key);
+                        if (existing != null && existing.closed) {
+                            continue;
+                        }
+                        if (!isWalkable(snapshot, nx, ny, nz, current.x, current.y, current.z, true)) {
+                            continue;
+                        }
+                        double g = current.g + stepCost(dx, dy, dz);
+                        if (existing == null || g < existing.g) {
+                            Node node = new Node(nx, ny, nz, current, g, heuristic(nx, ny, nz, ex, ey, ez));
+                            nodes.put(key, node);
+                            openSet.add(node);
+                        }
+                    }
                 }
-                actualStart = prePath.get(prePath.size() - 1);
             }
         }
 
-        PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingDouble(n -> n.fCost));
-        Map<Location, Node> allNodes = new HashMap<>();
-        Set<Location> closedSet = new HashSet<>();
-
-        Node startNode = new Node(actualStart, null, 0, getDistance(actualStart, end));
-        openSet.add(startNode);
-        allNodes.put(actualStart, startNode);
-
-        int iterations = 0;
-
-        while (!openSet.isEmpty()) {
-            iterations++;
-            if (iterations > MAX_PATHFINDING_ITERATIONS) {
-                return Collections.emptyList();
-            }
-
-            Node currentNode = openSet.poll();
-            closedSet.add(currentNode.location);
-
-            if (currentNode.location.getBlockX() == end.getBlockX() &&
-                    currentNode.location.getBlockY() == end.getBlockY() &&
-                    currentNode.location.getBlockZ() == end.getBlockZ()) {
-                List<Location> mainPath = reconstructPath(currentNode);
-                List<Location> fullPath = new ArrayList<>(prePath);
-                fullPath.addAll(mainPath);
-                return fullPath;
-            }
-
-            for (Location neighborLoc : getNeighbors(currentNode.location)) {
-                if (closedSet.contains(neighborLoc)) {
-                    continue;
-                }
-
-                double newGCost = currentNode.gCost + getDistance(currentNode.location, neighborLoc);
-                Node neighborNode = allNodes.get(neighborLoc);
-
-                if (neighborNode == null || newGCost < neighborNode.gCost) {
-                    if (neighborNode == null) {
-                        neighborNode = new Node(neighborLoc, currentNode, newGCost, getDistance(neighborLoc, end));
-                        allNodes.put(neighborLoc, neighborNode);
-                    } else {
-                        neighborNode.gCost = newGCost;
-                        neighborNode.parent = currentNode;
-                        neighborNode.fCost = neighborNode.gCost + neighborNode.hCost;
-                    }
-
-                    if (!openSet.contains(neighborNode)) {
-                        openSet.add(neighborNode);
-                    }
-                }
-            }
+        if (best != startNode && !snapshot.contains(ex, ez)) {
+            return join(prePath, toLocations(world, best));
         }
         return Collections.emptyList();
     }
 
-    private List<Location> reconstructPath(Node endNode) {
+    private Node findClosestAllowed(WorldSnapshot snapshot, int sx, int sy, int sz) {
+        Queue<Node> queue = new ArrayDeque<>();
+        Set<Long> visited = new HashSet<>();
+        Node startNode = new Node(sx, sy, sz, null, 0, 0);
+        queue.add(startNode);
+        visited.add(startNode.key());
+
+        double maxSq = (double) MAX_PRE_PATHFINDING_RADIUS * MAX_PRE_PATHFINDING_RADIUS;
+        int iterations = 0;
+        while (!queue.isEmpty() && iterations < MAX_ITERATIONS) {
+            Node current = queue.poll();
+            iterations++;
+
+            if (allowed[snapshot.get(current.x, current.y - 1, current.z).ordinal()]) {
+                return current;
+            }
+
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (dx == 0 && dy == 0 && dz == 0) {
+                            continue;
+                        }
+                        int nx = current.x + dx;
+                        int ny = current.y + dy;
+                        int nz = current.z + dz;
+                        int ox = nx - sx;
+                        int oy = ny - sy;
+                        int oz = nz - sz;
+                        if (ox * ox + oy * oy + oz * oz >= maxSq) {
+                            continue;
+                        }
+                        long key = Node.pack(nx, ny, nz);
+                        if (visited.contains(key)) {
+                            continue;
+                        }
+                        if (isWalkable(snapshot, nx, ny, nz, current.x, current.y, current.z, false)) {
+                            visited.add(key);
+                            queue.add(new Node(nx, ny, nz, current, 0, 0));
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean isWalkable(WorldSnapshot snapshot, int x, int y, int z, int px, int py, int pz, boolean strict) {
+        Material block = snapshot.get(x, y, z);
+
+        if (strict && CLIMBABLE[block.ordinal()]) {
+            return true;
+        }
+
+        if (!PASSABLE[block.ordinal()] || !PASSABLE[snapshot.get(x, y + 1, z).ordinal()]) {
+            return false;
+        }
+
+        Material below = snapshot.get(x, y - 1, z);
+
+        if (strict && allowed != null && !allowed[below.ordinal()]) {
+            return false;
+        }
+
+        if (x != px && z != pz && !isDiagonalPassable(snapshot, px, py, pz, x, z)) {
+            return false;
+        }
+
+        if (y == py) {
+            return SOLID[below.ordinal()] || below == Material.WATER || below == Material.LAVA;
+        }
+
+        if (y > py) {
+            return y - py == 1 && SOLID[below.ordinal()];
+        }
+
+        if (safeMode) {
+            if (py - y > 3) {
+                return false;
+            }
+            return SOLID[below.ordinal()] || SOLID[snapshot.get(x, y - 2, z).ordinal()];
+        }
+
+        int minY = snapshot.getMinY();
+        for (int cy = y - 1; cy >= minY; cy--) {
+            Material check = snapshot.get(x, cy, z);
+            if (SOLID[check.ordinal()]) {
+                return true;
+            }
+            if (!PASSABLE[check.ordinal()]) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private boolean isDiagonalPassable(WorldSnapshot snapshot, int px, int py, int pz, int x, int z) {
+        int cx = px + Integer.compare(x, px);
+        int cz = pz + Integer.compare(z, pz);
+        return PASSABLE[snapshot.get(cx, py, pz).ordinal()]
+                && PASSABLE[snapshot.get(cx, py + 1, pz).ordinal()]
+                && PASSABLE[snapshot.get(px, py, cz).ordinal()]
+                && PASSABLE[snapshot.get(px, py + 1, cz).ordinal()];
+    }
+
+    private static double stepCost(int dx, int dy, int dz) {
+        int axes = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+        return axes == 1 ? 1 : axes == 2 ? SQRT2 : SQRT3;
+    }
+
+    private static double heuristic(int x, int y, int z, int ex, int ey, int ez) {
+        double dx = ex - x;
+        double dy = ey - y;
+        double dz = ez - z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    private static List<Location> toLocations(World world, Node end) {
         List<Location> path = new ArrayList<>();
-        Node currentNode = endNode;
-        while (currentNode != null) {
-            path.add(currentNode.location);
-            currentNode = currentNode.parent;
+        for (Node node = end; node != null; node = node.parent) {
+            path.add(new Location(world, node.x, node.y, node.z));
         }
         Collections.reverse(path);
         return path;
     }
 
-    private double getDistance(Location loc1, Location loc2) {
-        return loc1.distance(loc2);
+    private static List<Location> join(List<Location> prePath, List<Location> mainPath) {
+        if (prePath.isEmpty()) {
+            return mainPath;
+        }
+        List<Location> full = new ArrayList<>(prePath);
+        full.addAll(mainPath);
+        return full;
     }
 
     public static String getDirection(Location from, Location to) {
@@ -179,239 +356,32 @@ public class AStarPathfinder {
         return (int) from.distance(to);
     }
 
-    private List<Location> findPathToClosestAllowedBlock(Location start) {
-        if (allowedMaterials == null || allowedMaterials.isEmpty()) {
-            return Collections.emptyList();
-        }
+    private static final class Node {
+        final int x;
+        final int y;
+        final int z;
+        final Node parent;
+        final double g;
+        final double h;
+        final double f;
+        boolean closed;
 
-        Queue<Location> queue = new LinkedList<>();
-        Map<Location, Location> cameFrom = new HashMap<>();
-        Set<Location> visited = new HashSet<>();
-
-        Location startBlockLoc = start.getBlock().getLocation();
-        queue.add(startBlockLoc);
-        visited.add(startBlockLoc);
-        cameFrom.put(startBlockLoc, null);
-
-        int iterations = 0;
-        while (!queue.isEmpty() && iterations < MAX_PATHFINDING_ITERATIONS) {
-            Location current = queue.poll();
-            iterations++;
-
-            Location blockBelow = current.clone().subtract(0, 1, 0);
-            if (allowedMaterials.contains(blockBelow.getBlock().getType())) {
-                List<Location> path = new ArrayList<>();
-                Location temp = current;
-                while (temp != null) {
-                    path.add(temp);
-                    temp = cameFrom.get(temp);
-                }
-                Collections.reverse(path);
-                return path;
-            }
-
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        if (dx == 0 && dy == 0 && dz == 0) continue;
-
-                        Location neighbor = new Location(current.getWorld(),
-                                current.getX() + dx,
-                                current.getY() + dy,
-                                current.getZ() + dz);
-
-                        if (!visited.contains(neighbor) && start.distance(neighbor) < MAX_PRE_PATHFINDING_RADIUS && isPathableForPrePath(neighbor, current)) {
-                            visited.add(neighbor);
-                            cameFrom.put(neighbor, current);
-                            queue.add(neighbor);
-                        }
-                    }
-                }
-            }
-        }
-        return Collections.emptyList();
-    }
-
-    private boolean isPathableForPrePath(Location loc, Location previousLoc) {
-        Block block = loc.getBlock();
-        Block blockAbove = loc.clone().add(0, 1, 0).getBlock();
-        Block blockBelow = loc.clone().add(0, -1, 0).getBlock();
-
-        if (!PASSABLE_MATERIALS.contains(block.getType()) || !PASSABLE_MATERIALS.contains(blockAbove.getType())) {
-            return false;
-        }
-
-        if (isDiagonalMove(loc, previousLoc)) {
-            if (!isDiagonalPassable(previousLoc, loc)) {
-                return false;
-            }
-        }
-
-        if (loc.getBlockY() == previousLoc.getBlockY()) {
-            return blockBelow.getType().isSolid() ||
-                    blockBelow.getType() == Material.WATER ||
-                    blockBelow.getType() == Material.LAVA;
-        }
-
-        if (loc.getBlockY() > previousLoc.getBlockY()) {
-            int yDiff = loc.getBlockY() - previousLoc.getBlockY();
-            if (yDiff != 1) return false;
-            return blockBelow.getType().isSolid();
-        }
-
-        if (loc.getBlockY() < previousLoc.getBlockY()) {
-            int yDiff = previousLoc.getBlockY() - loc.getBlockY();
-            if (safeMode) {
-                if (yDiff > 3) return false;
-                Location landingCheck = loc.clone().add(0, -1, 0);
-                return landingCheck.getBlock().getType().isSolid() ||
-                        landingCheck.clone().add(0, -1, 0).getBlock().getType().isSolid();
-            } else {
-                Location checkLoc = loc.clone();
-                while (checkLoc.getBlockY() > 0) {
-                    checkLoc.add(0, -1, 0);
-                    Block checkBlock = checkLoc.getBlock();
-                    if (checkBlock.getType().isSolid()) {
-                        return true;
-                    }
-                    if (!PASSABLE_MATERIALS.contains(checkBlock.getType())) {
-                        return false;
-                    }
-                }
-                return false;
-            }
-        }
-        return false;
-    }
-
-
-    private List<Location> getNeighbors(Location loc) {
-        List<Location> neighbors = new ArrayList<>();
-        int x = loc.getBlockX();
-        int y = loc.getBlockY();
-        int z = loc.getBlockZ();
-
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    if (dx == 0 && dy == 0 && dz == 0) continue;
-
-                    Location neighborLoc = new Location(loc.getWorld(), x + dx, y + dy, z + dz);
-                    if (isWalkable(neighborLoc, loc)) {
-                        neighbors.add(neighborLoc);
-                    }
-                }
-            }
-        }
-        return neighbors;
-    }
-
-    private boolean isWalkable(Location loc, Location previousLoc) {
-        Block block = loc.getBlock();
-        Block blockAbove = loc.clone().add(0, 1, 0).getBlock();
-        Block blockBelow = loc.clone().add(0, -1, 0).getBlock();
-
-        if (MaterialSetTag.CLIMBABLE.getValues().contains(block.getType())) {
-            return true;
-        }
-
-        if (isDiagonalMove(loc, previousLoc)) {
-            if (!isDiagonalPassable(previousLoc, loc)) {
-                return false;
-            }
-        }
-
-        if (allowedMaterials != null && !allowedMaterials.isEmpty()) {
-            if (!allowedMaterials.contains(blockBelow.getType())) {
-                return false;
-            }
-        }
-
-        if (!PASSABLE_MATERIALS.contains(block.getType()) || !PASSABLE_MATERIALS.contains(blockAbove.getType())) {
-            return false;
-        }
-
-        if (loc.getBlockY() == previousLoc.getBlockY()) {
-            return blockBelow.getType().isSolid() ||
-                    blockBelow.getType() == Material.WATER ||
-                    blockBelow.getType() == Material.LAVA;
-        }
-
-        if (loc.getBlockY() > previousLoc.getBlockY()) {
-            int yDiff = loc.getBlockY() - previousLoc.getBlockY();
-            if (yDiff != 1) return false;
-            return blockBelow.getType().isSolid();
-        }
-
-        if (loc.getBlockY() < previousLoc.getBlockY()) {
-            int yDiff = previousLoc.getBlockY() - loc.getBlockY();
-            if (safeMode) {
-                if (yDiff > 3) return false;
-                Location landingCheck = loc.clone().add(0, -1, 0);
-                return landingCheck.getBlock().getType().isSolid() ||
-                        landingCheck.clone().add(0, -1, 0).getBlock().getType().isSolid();
-            } else {
-                Location checkLoc = loc.clone();
-                while (checkLoc.getBlockY() > 0) {
-                    checkLoc.add(0, -1, 0);
-                    Block checkBlock = checkLoc.getBlock();
-                    if (checkBlock.getType().isSolid()) {
-                        return true;
-                    }
-                    if (!PASSABLE_MATERIALS.contains(checkBlock.getType())) {
-                        return false;
-                    }
-                }
-                return false;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean isDiagonalMove(Location from, Location to) {
-        return from.getBlockX() != to.getBlockX() &&
-                from.getBlockZ() != to.getBlockZ();
-    }
-
-    private boolean isDiagonalPassable(Location from, Location to) {
-        int xDir = Integer.compare(to.getBlockX(), from.getBlockX());
-        int zDir = Integer.compare(to.getBlockZ(), from.getBlockZ());
-
-        Location corner1 = new Location(from.getWorld(),
-                from.getBlockX() + xDir,
-                from.getBlockY(),
-                from.getBlockZ());
-
-        Location corner2 = new Location(from.getWorld(),
-                from.getBlockX(),
-                from.getBlockY(),
-                from.getBlockZ() + zDir);
-
-        Block block1 = corner1.getBlock();
-        Block block1Above = corner1.clone().add(0, 1, 0).getBlock();
-        Block block2 = corner2.getBlock();
-        Block block2Above = corner2.clone().add(0, 1, 0).getBlock();
-
-        return (PASSABLE_MATERIALS.contains(block1.getType()) &&
-                PASSABLE_MATERIALS.contains(block1Above.getType()) &&
-                PASSABLE_MATERIALS.contains(block2.getType()) &&
-                PASSABLE_MATERIALS.contains(block2Above.getType()));
-    }
-
-    private static class Node {
-        Location location;
-        Node parent;
-        double gCost;
-        double hCost;
-        double fCost;
-
-        Node(Location location, Node parent, double gCost, double hCost) {
-            this.location = location;
+        Node(int x, int y, int z, Node parent, double g, double h) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
             this.parent = parent;
-            this.gCost = gCost;
-            this.hCost = hCost;
-            this.fCost = gCost + hCost;
+            this.g = g;
+            this.h = h;
+            this.f = g + h * HEURISTIC_WEIGHT;
+        }
+
+        long key() {
+            return pack(x, y, z);
+        }
+
+        static long pack(int x, int y, int z) {
+            return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | ((y + 2048) & 0xFFF);
         }
     }
 }
