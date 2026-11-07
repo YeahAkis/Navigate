@@ -106,7 +106,7 @@ publishMods {
     displayName = "Navigate ${project.version}"
     changelog = providers.fileContents(layout.projectDirectory.file('CHANGELOG.md')).asText.map { changelogFor(it, project.version.toString()) }
     type = project.version.toString().contains('alpha') ? ALPHA : (project.version.toString().contains('beta') ? BETA : STABLE)
-    modLoaders.addAll('paper', 'purpur')
+    modLoaders.addAll('paper', 'folia', 'purpur')
     dryRun = rehearsal
 
     modrinth {

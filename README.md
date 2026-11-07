@@ -2,13 +2,15 @@
 
 Shows a player the way to a set of coordinates. It finds a walkable path with A*, draws it as red dust particles, and can optionally push the player along it. Releases are on [Modrinth](https://modrinth.com/project/3t39uukw).
 
-Works on Paper 1.21 up to 1.21.11. Needs Java 21.
+Works on Paper 1.21 up to 1.21.11, and on Folia. Needs Java 21.
 
 ## How it works
 
 When a navigation starts, the plugin copies the loaded chunks around the player and the target on the main thread, then runs the search on another thread against that copy. Chunks that are not loaded count as walls, so searching never loads anything. The path is searched again when the player enters a new chunk, leaves the path, or when the last search found nothing and a few seconds have passed.
 
 Searches stay within 96 blocks of the player. If the target is farther than that you get a path to the closest reachable point, and it extends as you walk. The search uses a weighted heuristic, so paths can be a little longer than the shortest one in return for being quick.
+
+On Folia the search only sees chunks owned by the player's region, so a path can stop short at a region border.
 
 Safe mode (on by default) only allows drops of up to 3 blocks. Turn it off to allow any fall that ends on solid ground.
 

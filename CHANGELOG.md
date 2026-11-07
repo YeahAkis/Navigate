@@ -9,4 +9,5 @@
 - Navigation stops when the player changes world instead of throwing an error
 - New `follow` option on `/navigate start` and `/navigate startfor` that moves the player along the path, with jumps, ladders and swimming, needs `navigate.follow`
 - New `follow.speed` option in the config
+- Works on Folia, tasks now run on the player's region
 - Supports Paper 1.21.11
