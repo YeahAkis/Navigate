@@ -81,9 +81,15 @@ public class AStarPathfinder {
 
     private static final int MAX_ITERATIONS = 40000;
     private static final int MAX_PRE_PATHFINDING_RADIUS = 32;
+    private static final int MAX_SAFE_DROP = 3;
+    private static final int MAX_DROP = 128;
     private static final double HEURISTIC_WEIGHT = 1.5;
     private static final double SQRT2 = Math.sqrt(2);
-    private static final double SQRT3 = Math.sqrt(3);
+    private static final double STEP_UP_COST = 1.6;
+    private static final double OPENABLE_COST = 0.6;
+    private static final double WATER_COST = 0.5;
+    private static final int[] DX = {1, -1, 0, 0, 1, 1, -1, -1};
+    private static final int[] DZ = {0, 0, 1, -1, 1, -1, 1, -1};
 
     private final boolean safeMode;
     private final boolean[] allowed;
@@ -122,9 +128,14 @@ public class AStarPathfinder {
         int ey = end.getBlockY();
         int ez = end.getBlockZ();
 
+        if (!passable[snapshot.get(sx, sy, sz).ordinal()] && passable[snapshot.get(sx, sy + 1, sz).ordinal()] && passable[snapshot.get(sx, sy + 2, sz).ordinal()]) {
+            sy++;
+        }
+
+        Moves moves = new Moves();
         List<Location> prePath = Collections.emptyList();
         if (allowed != null && !allowed[snapshot.get(sx, sy - 1, sz).ordinal()]) {
-            Node reached = findClosestAllowed(snapshot, sx, sy, sz);
+            Node reached = findClosestAllowed(snapshot, moves, sx, sy, sz);
             if (reached == null) {
                 return Collections.emptyList();
             }
@@ -152,52 +163,43 @@ public class AStarPathfinder {
             current.closed = true;
             iterations++;
 
-            if (current.x == ex && current.y == ey && current.z == ez) {
+            int gx = current.x - ex;
+            int gy = current.y - ey;
+            int gz = current.z - ez;
+            if (gx * gx + gy * gy + gz * gz <= 2) {
                 return join(prePath, toLocations(world, current));
             }
 
-            if (current.h < best.h) {
+            if (current.h < best.h || current.h == best.h && current.g < best.g) {
                 best = current;
             }
 
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    for (int dy = -1; dy <= 1; dy++) {
-                        if (dx == 0 && dy == 0 && dz == 0) {
-                            continue;
-                        }
-                        int nx = current.x + dx;
-                        int ny = current.y + dy;
-                        int nz = current.z + dz;
-                        if (!snapshot.contains(nx, nz)) {
-                            continue;
-                        }
-                        long key = Node.pack(nx, ny, nz);
-                        Node existing = nodes.get(key);
-                        if (existing != null && existing.closed) {
-                            continue;
-                        }
-                        if (!isWalkable(snapshot, nx, ny, nz, current.x, current.y, current.z, true)) {
-                            continue;
-                        }
-                        double g = current.g + stepCost(dx, dy, dz);
-                        if (existing == null || g < existing.g) {
-                            Node node = new Node(nx, ny, nz, current, g, heuristic(nx, ny, nz, ex, ey, ez));
-                            nodes.put(key, node);
-                            openSet.add(node);
-                        }
-                    }
+            int count = generate(snapshot, moves, current.x, current.y, current.z, true);
+            for (int i = 0; i < count; i++) {
+                int nx = moves.x[i];
+                int ny = moves.y[i];
+                int nz = moves.z[i];
+                long key = Node.pack(nx, ny, nz);
+                Node existing = nodes.get(key);
+                if (existing != null && existing.closed) {
+                    continue;
+                }
+                double g = current.g + moves.cost[i];
+                if (existing == null || g < existing.g) {
+                    Node node = new Node(nx, ny, nz, current, g, heuristic(nx, ny, nz, ex, ey, ez));
+                    nodes.put(key, node);
+                    openSet.add(node);
                 }
             }
         }
 
-        if (best != startNode && !snapshot.contains(ex, ez)) {
+        if (best != startNode) {
             return join(prePath, toLocations(world, best));
         }
         return Collections.emptyList();
     }
 
-    private Node findClosestAllowed(WorldSnapshot snapshot, int sx, int sy, int sz) {
+    private Node findClosestAllowed(WorldSnapshot snapshot, Moves moves, int sx, int sy, int sz) {
         Queue<Node> queue = new ArrayDeque<>();
         Set<Long> visited = new HashSet<>();
         Node startNode = new Node(sx, sy, sz, null, 0, 0);
@@ -214,114 +216,152 @@ public class AStarPathfinder {
                 return current;
             }
 
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        if (dx == 0 && dy == 0 && dz == 0) {
-                            continue;
-                        }
-                        int nx = current.x + dx;
-                        int ny = current.y + dy;
-                        int nz = current.z + dz;
-                        int ox = nx - sx;
-                        int oy = ny - sy;
-                        int oz = nz - sz;
-                        if (ox * ox + oy * oy + oz * oz >= maxSq) {
-                            continue;
-                        }
-                        long key = Node.pack(nx, ny, nz);
-                        if (visited.contains(key)) {
-                            continue;
-                        }
-                        if (isWalkable(snapshot, nx, ny, nz, current.x, current.y, current.z, false)) {
-                            visited.add(key);
-                            queue.add(new Node(nx, ny, nz, current, 0, 0));
-                        }
-                    }
+            int count = generate(snapshot, moves, current.x, current.y, current.z, false);
+            for (int i = 0; i < count; i++) {
+                int nx = moves.x[i];
+                int ny = moves.y[i];
+                int nz = moves.z[i];
+                int ox = nx - sx;
+                int oy = ny - sy;
+                int oz = nz - sz;
+                if (ox * ox + oy * oy + oz * oz >= maxSq) {
+                    continue;
+                }
+                if (visited.add(Node.pack(nx, ny, nz))) {
+                    queue.add(new Node(nx, ny, nz, current, 0, 0));
                 }
             }
         }
         return null;
     }
 
-    private boolean isWalkable(WorldSnapshot snapshot, int x, int y, int z, int px, int py, int pz, boolean strict) {
-        Material block = snapshot.get(x, y, z);
+    private int generate(WorldSnapshot snapshot, Moves moves, int cx, int cy, int cz, boolean strict) {
+        moves.count = 0;
+        boolean headroom = passable[snapshot.get(cx, cy + 2, cz).ordinal()];
+        Material here = snapshot.get(cx, cy, cz);
+        boolean swimming = here == Material.WATER;
 
-        if (strict && CLIMBABLE[block.ordinal()]) {
-            return true;
+        for (int d = 0; d < 4; d++) {
+            int nx = cx + DX[d];
+            int nz = cz + DZ[d];
+            if (!snapshot.contains(nx, nz)) {
+                continue;
+            }
+            Material feet = snapshot.get(nx, cy, nz);
+            if (standable(snapshot, nx, cy, nz, strict)) {
+                moves.add(nx, cy, nz, 1 + extra(snapshot, nx, cy, nz));
+            } else if (SOLID[feet.ordinal()]) {
+                if (headroom && standable(snapshot, nx, cy + 1, nz, strict)) {
+                    moves.add(nx, cy + 1, nz, STEP_UP_COST + extra(snapshot, nx, cy + 1, nz));
+                }
+            } else if (passable[feet.ordinal()] && passable[snapshot.get(nx, cy + 1, nz).ordinal()]) {
+                drop(snapshot, moves, nx, cy, nz, strict);
+            }
         }
 
-        if (!passable[block.ordinal()] || !passable[snapshot.get(x, y + 1, z).ordinal()]) {
+        for (int d = 4; d < 8; d++) {
+            int dx = DX[d];
+            int dz = DZ[d];
+            int nx = cx + dx;
+            int nz = cz + dz;
+            if (!snapshot.contains(nx, nz)) {
+                continue;
+            }
+            if (!standable(snapshot, nx, cy, nz, strict)) {
+                continue;
+            }
+            if (passable[snapshot.get(cx + dx, cy, cz).ordinal()]
+                    && passable[snapshot.get(cx + dx, cy + 1, cz).ordinal()]
+                    && passable[snapshot.get(cx, cy, cz + dz).ordinal()]
+                    && passable[snapshot.get(cx, cy + 1, cz + dz).ordinal()]) {
+                moves.add(nx, cy, nz, SQRT2 + extra(snapshot, nx, cy, nz));
+            }
+        }
+
+        if (headroom) {
+            Material above = snapshot.get(cx, cy + 1, cz);
+            if (CLIMBABLE[above.ordinal()] || swimming && passable[above.ordinal()]) {
+                moves.add(cx, cy + 1, cz, 1 + (swimming ? WATER_COST : 0));
+            }
+        }
+        Material below = snapshot.get(cx, cy - 1, cz);
+        if (CLIMBABLE[below.ordinal()] || swimming && passable[below.ordinal()]) {
+            moves.add(cx, cy - 1, cz, 1 + (swimming ? WATER_COST : 0));
+        }
+        return moves.count;
+    }
+
+    private void drop(WorldSnapshot snapshot, Moves moves, int x, int y, int z, boolean strict) {
+        int limit = safeMode ? MAX_SAFE_DROP : MAX_DROP;
+        int minY = snapshot.getMinY();
+        for (int depth = 1; depth <= limit; depth++) {
+            int ly = y - depth;
+            if (ly < minY) {
+                return;
+            }
+            Material feet = snapshot.get(x, ly, z);
+            if (!passable[feet.ordinal()]) {
+                return;
+            }
+            if (standable(snapshot, x, ly, z, strict)) {
+                moves.add(x, ly, z, 1 + (depth - 1) + extra(snapshot, x, ly, z));
+                return;
+            }
+            Material below = snapshot.get(x, ly - 1, z);
+            if (HAZARD_FLOOR[below.ordinal()] && (safeMode || below == Material.LAVA)) {
+                return;
+            }
+        }
+    }
+
+    private boolean standable(WorldSnapshot snapshot, int x, int y, int z, boolean strict) {
+        Material feet = snapshot.get(x, y, z);
+        if (!passable[feet.ordinal()] || !passable[snapshot.get(x, y + 1, z).ordinal()]) {
             return false;
         }
 
         Material below = snapshot.get(x, y - 1, z);
-
         if (HAZARD_FLOOR[below.ordinal()] && (safeMode || below == Material.LAVA)) {
             return false;
         }
 
-        if (strict && allowed != null && !allowed[below.ordinal()]) {
+        boolean climbable = CLIMBABLE[feet.ordinal()];
+        if (strict && allowed != null && !climbable && feet != Material.WATER && !allowed[below.ordinal()]) {
             return false;
         }
 
-        if (x != px && z != pz && !isDiagonalPassable(snapshot, px, py, pz, x, z)) {
-            return false;
-        }
-
-        if (y == py) {
-            return SOLID[below.ordinal()] || below == Material.WATER;
-        }
-
-        if (y > py) {
-            return y - py == 1 && SOLID[below.ordinal()];
-        }
-
-        if (safeMode) {
-            if (py - y > 3) {
-                return false;
-            }
-            return SOLID[below.ordinal()] || SOLID[snapshot.get(x, y - 2, z).ordinal()];
-        }
-
-        int minY = snapshot.getMinY();
-        for (int cy = y - 1; cy >= minY; cy--) {
-            Material check = snapshot.get(x, cy, z);
-            if (SOLID[check.ordinal()]) {
-                return true;
-            }
-            if (!passable[check.ordinal()]) {
-                return false;
-            }
-        }
-        return false;
+        return SOLID[below.ordinal()] || below == Material.WATER || climbable || feet == Material.WATER;
     }
 
-    private boolean isDiagonalPassable(WorldSnapshot snapshot, int px, int py, int pz, int x, int z) {
-        int cx = px + Integer.compare(x, px);
-        int cz = pz + Integer.compare(z, pz);
-        return passable[snapshot.get(cx, py, pz).ordinal()]
-                && passable[snapshot.get(cx, py + 1, pz).ordinal()]
-                && passable[snapshot.get(px, py, cz).ordinal()]
-                && passable[snapshot.get(px, py + 1, cz).ordinal()];
-    }
-
-    private static double stepCost(int dx, int dy, int dz) {
-        int axes = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
-        return axes == 1 ? 1 : axes == 2 ? SQRT2 : SQRT3;
+    private double extra(WorldSnapshot snapshot, int x, int y, int z) {
+        double extra = 0;
+        if (Openables.isOpenable(snapshot.get(x, y, z)) || Openables.isOpenable(snapshot.get(x, y + 1, z))) {
+            extra += OPENABLE_COST;
+        }
+        if (snapshot.get(x, y, z) == Material.WATER) {
+            extra += WATER_COST;
+        }
+        return extra;
     }
 
     private static double heuristic(int x, int y, int z, int ex, int ey, int ez) {
-        double dx = ex - x;
-        double dy = ey - y;
-        double dz = ez - z;
-        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+        double dx = Math.abs(ex - x);
+        double dz = Math.abs(ez - z);
+        double dy = Math.abs(ey - y);
+        double min = Math.min(dx, dz);
+        return dx + dz - (2 - SQRT2) * min + dy * 0.5;
     }
 
     private static List<Location> toLocations(World world, Node end) {
         List<Location> path = new ArrayList<>();
         for (Node node = end; node != null; node = node.parent) {
             path.add(new Location(world, node.x, node.y, node.z));
+            Node parent = node.parent;
+            if (parent != null && parent.y - node.y > 1) {
+                for (int y = node.y + 1; y <= parent.y; y++) {
+                    path.add(new Location(world, node.x, y, node.z));
+                }
+            }
         }
         Collections.reverse(path);
         return path;
@@ -332,8 +372,24 @@ public class AStarPathfinder {
             return mainPath;
         }
         List<Location> full = new ArrayList<>(prePath);
-        full.addAll(mainPath);
+        full.addAll(mainPath.subList(Math.min(1, mainPath.size()), mainPath.size()));
         return full;
+    }
+
+    private static final class Moves {
+        final int[] x = new int[16];
+        final int[] y = new int[16];
+        final int[] z = new int[16];
+        final double[] cost = new double[16];
+        int count;
+
+        void add(int nx, int ny, int nz, double c) {
+            x[count] = nx;
+            y[count] = ny;
+            z[count] = nz;
+            cost[count] = c;
+            count++;
+        }
     }
 
     public static String getDirection(Location from, Location to) {
