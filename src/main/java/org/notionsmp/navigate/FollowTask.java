@@ -26,6 +26,7 @@ public class FollowTask implements Runnable {
     private final Navigate plugin;
     private final Navigation navigation;
     private final DoorOpener doors;
+    private final double walkSpeed;
 
     private List<Location> path;
     private int index;
@@ -35,6 +36,7 @@ public class FollowTask implements Runnable {
     public FollowTask(Navigate plugin, Navigation navigation) {
         this.plugin = plugin;
         this.navigation = navigation;
+        this.walkSpeed = plugin.getConfig().getDouble("follow.speed", 0.22);
         this.doors = plugin.getConfig().getBoolean("follow.open-doors", true)
                 ? new DoorOpener(plugin, plugin.getConfig().getBoolean("follow.close-doors", true))
                 : null;
@@ -102,7 +104,7 @@ public class FollowTask implements Runnable {
         double dz = next.getBlockZ() + 0.5 - position.getZ();
         double horizontal = Math.sqrt(dx * dx + dz * dz);
 
-        double speed = Math.min(plugin.getConfig().getDouble("follow.speed", 0.22), horizontal);
+        double speed = Math.min(walkSpeed, horizontal);
         double vx = horizontal > 1.0E-4 ? dx / horizontal * speed : 0;
         double vz = horizontal > 1.0E-4 ? dz / horizontal * speed : 0;
         double vy = player.getVelocity().getY();

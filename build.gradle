@@ -11,14 +11,12 @@ version = project.version
 repositories {
     mavenCentral()
     maven { url 'https://repo.papermc.io/repository/maven-public/' }
-    maven { url 'https://repo.aikar.co/content/groups/aikar/' }
     maven { url 'https://repo.tcoded.com/releases' }
     maven { url "https://repo.extendedclip.com/content/repositories/placeholderapi/" }
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:${paperapi}")
-    implementation("co.aikar:acf-paper:${paperacf}")
     implementation("com.tcoded:FoliaLib:${folialib}")
     compileOnly("me.clip:placeholderapi:${papi}")
 }
@@ -30,8 +28,6 @@ tasks {
     }
 
     shadowJar {
-        relocate("co.aikar.commands", "org.notionsmp.navigate.lib.commands")
-        relocate("co.aikar.locales", "org.notionsmp.navigate.lib.locales")
         relocate("com.tcoded.folialib", "org.notionsmp.libs.folialib")
 
         archiveClassifier.set("")

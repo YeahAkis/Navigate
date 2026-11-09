@@ -1,7 +1,7 @@
 package org.notionsmp.navigate;
 
-import co.aikar.commands.PaperCommandManager;
 import com.tcoded.folialib.FoliaLib;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.notionsmp.navigate.util.NavigatePlaceholder;
@@ -23,10 +23,11 @@ public final class Navigate extends JavaPlugin {
         instance = this;
         foliaLib = new FoliaLib(this);
         navigationService = new NavigationService(this);
-        PaperCommandManager manager = new PaperCommandManager(this);
-        manager.registerCommand(new NavigateCommand());
-
         saveDefaultConfig();
+
+        NavigateCommands commands = new NavigateCommands(this);
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
+                event.registrar().register(commands.build(), "Show the way to a position"));
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null && Bukkit.getPluginManager().getPlugin("PlaceholderAPI").isEnabled()) {
             new NavigatePlaceholder().register();
