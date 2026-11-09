@@ -190,7 +190,7 @@ final class NavigateCommands {
     }
 
     private void begin(CommandSender sender, Player player, BlockPosition position, NavigateOptions options) {
-        plugin.foliaLib.getScheduler().runAtEntity(player, task -> {
+        player.getScheduler().run(plugin, task -> {
             boolean self = sender.equals(player);
             if (plugin.getNavigationService().stop(player)) {
                 if (self) {
@@ -214,7 +214,7 @@ final class NavigateCommands {
             if (!self && plugin.getConfig().getBoolean("messages.notify-target", true)) {
                 messages().send(player, "navigation.started-by", Placeholder.unparsed("sender", sender.getName()));
             }
-        });
+       }, null);
     }
 
     private CompletableFuture<Suggestions> suggestOptions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {

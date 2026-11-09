@@ -57,7 +57,7 @@ final class DoorOpener {
                 continue;
             }
             if (plugin.isEnabled()) {
-                plugin.foliaLib.getScheduler().runAtLocation(block.getLocation(), task -> set(block, false));
+                plugin.getServer().getRegionScheduler().run(plugin, block.getLocation(), task -> set(block, false));
             } else {
                 set(block, false);
             }

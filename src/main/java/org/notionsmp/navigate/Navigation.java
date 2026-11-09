@@ -1,6 +1,6 @@
 package org.notionsmp.navigate;
 
-import com.tcoded.folialib.wrapper.task.WrappedTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -26,8 +26,8 @@ public class Navigation {
     private final ChunkCache chunkCache = new ChunkCache();
     private final ParticleSettings particles;
     private final boolean arrivalMessage;
-    private WrappedTask pathTask;
-    private WrappedTask moveTask;
+    private ScheduledTask pathTask;
+    private ScheduledTask moveTask;
 
     private volatile List<Location> currentPath;
     private volatile int lastChunkX = Integer.MIN_VALUE;
@@ -164,9 +164,9 @@ public class Navigation {
 
     void start() {
         UUID playerId = player.getUniqueId();
-        pathTask = plugin.foliaLib.getScheduler().runAtEntityTimer(player, task, () -> plugin.getNavigationService().stop(playerId), 1L, particles.interval());
+        pathTask = player.getScheduler().runAtFixedRate(plugin, scheduled -> task.run(), () -> plugin.getNavigationService().stop(playerId), 1L, particles.interval());
         if (followTask != null) {
-            moveTask = plugin.foliaLib.getScheduler().runAtEntityTimer(player, followTask, 1L, 1L);
+            moveTask = player.getScheduler().runAtFixedRate(plugin, scheduled -> followTask.run(), null, 1L, 1L);
         }
     }
 

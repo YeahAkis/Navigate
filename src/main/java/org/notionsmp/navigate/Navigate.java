@@ -1,6 +1,5 @@
 package org.notionsmp.navigate;
 
-import com.tcoded.folialib.FoliaLib;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -17,12 +16,10 @@ public final class Navigate extends JavaPlugin {
     private static Navigate instance;
     private NavigationService navigationService;
     private Messages messages;
-    public FoliaLib foliaLib;
 
     @Override
     public void onEnable() {
         instance = this;
-        foliaLib = new FoliaLib(this);
         navigationService = new NavigationService(this);
         saveDefaultConfig();
         messages = new Messages(this);

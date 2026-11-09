@@ -83,7 +83,7 @@ public class PathfindingTask implements Runnable {
         Location playerBlockLoc = new Location(world, px, playerLocation.getBlockY(), pz);
         Location targetBlockLoc = new Location(world, tx, targetLocation.getBlockY(), tz);
 
-        plugin.foliaLib.getScheduler().runAsync(task -> {
+        plugin.getServer().getAsyncScheduler().runNow(plugin, task -> {
             List<Location> foundPath;
             try {
                 foundPath = pathfinder.findPath(snapshot, playerBlockLoc, targetBlockLoc);
@@ -92,7 +92,10 @@ public class PathfindingTask implements Runnable {
                 foundPath = List.of();
             }
             List<Location> result = foundPath;
-            plugin.foliaLib.getScheduler().runAtEntity(player, nextTask -> {
+            if (!plugin.isEnabled()) {
+                return;
+            }
+            player.getScheduler().run(plugin, nextTask -> {
                 navigation.setSearching(false);
                 if (!player.isOnline()) {
                     plugin.getNavigationService().stop(player.getUniqueId());
@@ -104,7 +107,7 @@ public class PathfindingTask implements Runnable {
                     return;
                 }
                 displayPathParticles(player, result);
-            });
+            }, null);
         });
     }
 
