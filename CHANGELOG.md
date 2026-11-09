@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3
+
+- Follow opens doors, trapdoors and fence gates on the way and closes them behind the player, iron doors count as walls
+- Follow eases the pitch back to level, starting while looking up or down no longer keeps the view stuck there
+- Safe mode no longer routes through lava, and avoids berry bushes, cobwebs, campfires and magma. Lava is never walked on or through in either mode
+- Pathfinding rewrite: drops are checked properly (3 blocks in safe mode), jumps need headroom, ladders and swimming work in both directions, and an unreachable target gives a path to the closest point
+- Much faster searches, block lookups are cached per chunk and chunk snapshots are reused for a few seconds
+- Commands use Brigadier: `~` coordinates, player selectors, tab completion for options and blocks, and the ACF library is gone from the jar
+- Options are now `safe`/`unsafe`, `follow` and a block list in any order, the old `true`/`false` still works
+- New `/navigate reload` and `/navigate help`, `navigate.reload` permission
+- Messages come from language files in `plugins/Navigate/lang`, picked per player from the client language. Only English is included, add your own to translate
+- `strings.direction` is gone from the config, direction names are in the language files now
+
 ## 1.2
 
 - Pathfinding is much faster and no longer tanks TPS, the search reads from a chunk snapshot instead of asking the world for every block, and it never loads chunks
