@@ -24,7 +24,7 @@ import java.util.logging.Level;
 public final class Messages {
 
     private static final String DEFAULT_LANGUAGE = "en_us";
-    private static final List<String> BUNDLED = List.of("en_us", "lol_us");
+    private static final List<String> BUNDLED = List.of("en_us", "lol_us", "de_de");
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private final Navigate plugin;

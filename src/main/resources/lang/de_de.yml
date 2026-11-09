@@ -1,0 +1,60 @@
+help:
+  header: "<color:#006565>Navigate</color> commands:"
+  legend: "<gray><required> [optional]</gray>"
+  start: "<yellow>/navigate start <x y z> [sicher|unsicher] [Folgen] [Materialien]</yellow> <gray>-</gray> Starte der Navigation zu einem Zielpunkt, Folgen führt dich entlang des Pfades"
+  stop: "<yellow>/navigate stop</yellow> <gray>-</gray> Navigation beenden"
+  startfor: "<yellow>/navigate startfor <players> <x y z> [sicher|unsicher] [Folgen] [Materialien]</yellow> <gray>-</gray> Startet die Navigation für einen anderen Spieler"
+  stopfor: "<yellow>/navigate stopfor <players></yellow> <gray>-</gray> Stoppt die Navigation für einen anderen Spieler"
+  reload: "<yellow>/navigate reload</yellow> <gray>-</gray> Konfiguration und Sprachen wurden neu geladen"
+  neofetch: "<yellow>/navigate neofetch</yellow> <gray>-</gray> Informationen über den Server und das Plugin"
+
+error:
+  players-only-start: "Nur Spieler können die Navigation starten, verwende startfor durch die Konsole."
+  players-only-stop: "Nur Spieler können die Navigation stoppen, verwende stopfor durch die Konsole"
+  no-follow-permission: "Du hast nicht die Rechte um [Folgen] zu verwenden."
+  unknown-option: "Unbekannte Version oder Block: <value>"
+  no-players: "Kein Spieler gefunden."
+
+navigation:
+  started: "Navigation zu X:<x> Y:<y> Z:<z> wurde im sicheren Modus: <safe>, Folgen: <follow> gestartet"
+  started-for: "Navigation wurde für <player>, zu X:<x> Y:<y> Z:<z> gestartet. Mit sicherem Modus: <safe>, Folgen: <follow>"
+  previous-stopped: "Deine vorherige Navigation wurde gestoppt."
+  previous-stopped-for: "Die vorherige Navigation für <player> wurde gestoppt."
+  stopped: "Navigation gestoppt."
+  stopped-for: "Navigation für <player> gestoppt."
+  not-navigating: "Momentan ist keine Navigation aktiv."
+  not-navigating-for: "<player> navigiert momentan nicht."
+  started-by: "<sender> hat die Navigation für dich gestartet."
+  stopped-by: "<sender> hat deine Navigation gestoppt."  
+  reached: "Du hast dein Ziel erreicht!"
+
+reload: "Konfiguration und Sprachen wurden neu geladen."
+
+state:
+  enabled: "an"
+  disabled: "aus"
+
+placeholder:
+  no-player: "Kein Spieler"
+  no-target: "Kein Ziel"
+
+direction:
+  south: "Süden"
+  south-west: "Südwest"
+  west: "Westen"
+  north-west: "Nordwest"
+  north: "Norden"
+  north-east: "Nordost"
+  east: "Osten"
+  south-east: "Südost"
+  unknown: "N/A"
+
+neofetch:
+  hover: "Klicke um die<br> <color:#1bd96a>Modrinth</color> Seite zu öffnen"
+  version: "Version"
+  tps: "TPS"
+  uptime: "Uptime"
+  uptime-format: "%1$02d Stunden, %2$02d Minuten, %3$02d Sekunden"
+  plugin-name: "Plugin Name"
+  plugin-version: "Plugin Version"
+  timezone: "Zeitzone"
