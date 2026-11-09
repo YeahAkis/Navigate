@@ -22,11 +22,13 @@ public class AStarPathfinder {
     private static final boolean[] PASSABLE;
     private static final boolean[] SOLID;
     private static final boolean[] CLIMBABLE;
+    private static final boolean[] HAZARD_FEET;
+    private static final boolean[] HAZARD_FLOOR;
 
     static {
         Set<Material> passable = EnumSet.of(
                 Material.AIR, Material.CAVE_AIR, Material.VOID_AIR,
-                Material.WATER, Material.LAVA,
+                Material.WATER,
                 Material.SHORT_GRASS, Material.TALL_GRASS, Material.FERN, Material.LARGE_FERN,
                 Material.COBWEB, Material.TRIPWIRE,
                 Material.TORCH, Material.WALL_TORCH, Material.REDSTONE_TORCH, Material.REDSTONE_WALL_TORCH,
@@ -58,6 +60,14 @@ public class AStarPathfinder {
         PASSABLE = new boolean[materials.length];
         SOLID = new boolean[materials.length];
         CLIMBABLE = new boolean[materials.length];
+        HAZARD_FEET = new boolean[materials.length];
+        HAZARD_FLOOR = new boolean[materials.length];
+        for (Material material : EnumSet.of(Material.SWEET_BERRY_BUSH, Material.WITHER_ROSE, Material.COBWEB, Material.POWDER_SNOW)) {
+            HAZARD_FEET[material.ordinal()] = true;
+        }
+        for (Material material : EnumSet.of(Material.MAGMA_BLOCK, Material.CAMPFIRE, Material.SOUL_CAMPFIRE, Material.CACTUS, Material.FIRE, Material.SOUL_FIRE, Material.LAVA, Material.POWDER_SNOW)) {
+            HAZARD_FLOOR[material.ordinal()] = true;
+        }
         Set<Material> climbable = MaterialSetTag.CLIMBABLE.getValues();
         for (Material material : materials) {
             if (material.isLegacy()) {
@@ -77,9 +87,18 @@ public class AStarPathfinder {
 
     private final boolean safeMode;
     private final boolean[] allowed;
+    private final boolean[] passable;
 
     public AStarPathfinder(boolean safeMode, Set<Material> allowedMaterials) {
         this.safeMode = safeMode;
+        this.passable = PASSABLE.clone();
+        if (safeMode) {
+            for (int i = 0; i < passable.length; i++) {
+                if (HAZARD_FEET[i]) {
+                    passable[i] = false;
+                }
+            }
+        }
         if (allowedMaterials != null && !allowedMaterials.isEmpty()) {
             this.allowed = new boolean[Material.values().length];
             for (Material material : allowedMaterials) {
@@ -232,11 +251,15 @@ public class AStarPathfinder {
             return true;
         }
 
-        if (!PASSABLE[block.ordinal()] || !PASSABLE[snapshot.get(x, y + 1, z).ordinal()]) {
+        if (!passable[block.ordinal()] || !passable[snapshot.get(x, y + 1, z).ordinal()]) {
             return false;
         }
 
         Material below = snapshot.get(x, y - 1, z);
+
+        if (HAZARD_FLOOR[below.ordinal()] && (safeMode || below == Material.LAVA)) {
+            return false;
+        }
 
         if (strict && allowed != null && !allowed[below.ordinal()]) {
             return false;
@@ -247,7 +270,7 @@ public class AStarPathfinder {
         }
 
         if (y == py) {
-            return SOLID[below.ordinal()] || below == Material.WATER || below == Material.LAVA;
+            return SOLID[below.ordinal()] || below == Material.WATER;
         }
 
         if (y > py) {
@@ -267,7 +290,7 @@ public class AStarPathfinder {
             if (SOLID[check.ordinal()]) {
                 return true;
             }
-            if (!PASSABLE[check.ordinal()]) {
+            if (!passable[check.ordinal()]) {
                 return false;
             }
         }
@@ -277,10 +300,10 @@ public class AStarPathfinder {
     private boolean isDiagonalPassable(WorldSnapshot snapshot, int px, int py, int pz, int x, int z) {
         int cx = px + Integer.compare(x, px);
         int cz = pz + Integer.compare(z, pz);
-        return PASSABLE[snapshot.get(cx, py, pz).ordinal()]
-                && PASSABLE[snapshot.get(cx, py + 1, pz).ordinal()]
-                && PASSABLE[snapshot.get(px, py, cz).ordinal()]
-                && PASSABLE[snapshot.get(px, py + 1, cz).ordinal()];
+        return passable[snapshot.get(cx, py, pz).ordinal()]
+                && passable[snapshot.get(cx, py + 1, pz).ordinal()]
+                && passable[snapshot.get(px, py, cz).ordinal()]
+                && passable[snapshot.get(px, py + 1, cz).ordinal()];
     }
 
     private static double stepCost(int dx, int dy, int dz) {
