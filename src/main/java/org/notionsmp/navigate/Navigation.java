@@ -24,6 +24,8 @@ public class Navigation {
     private final PathfindingTask task;
     private final FollowTask followTask;
     private final ChunkCache chunkCache = new ChunkCache();
+    private final ParticleSettings particles;
+    private final boolean arrivalMessage;
     private WrappedTask pathTask;
     private WrappedTask moveTask;
 
@@ -41,6 +43,8 @@ public class Navigation {
         this.allowedMaterials = normalizeMaterials(allowedMaterials);
         this.pathfinder = new AStarPathfinder(safeMode, this.allowedMaterials);
         this.follow = follow;
+        this.particles = ParticleSettings.load(plugin.getConfig());
+        this.arrivalMessage = plugin.getConfig().getBoolean("messages.arrival", true);
         this.task = new PathfindingTask(plugin, this);
         this.followTask = follow ? new FollowTask(plugin, this) : null;
     }
@@ -107,6 +111,14 @@ public class Navigation {
         return lastChunkZ;
     }
 
+    ParticleSettings getParticles() {
+        return particles;
+    }
+
+    boolean isArrivalMessage() {
+        return arrivalMessage;
+    }
+
     ChunkCache getChunkCache() {
         return chunkCache;
     }
@@ -152,7 +164,7 @@ public class Navigation {
 
     void start() {
         UUID playerId = player.getUniqueId();
-        pathTask = plugin.foliaLib.getScheduler().runAtEntityTimer(player, task, () -> plugin.getNavigationService().stop(playerId), 1L, 10L);
+        pathTask = plugin.foliaLib.getScheduler().runAtEntityTimer(player, task, () -> plugin.getNavigationService().stop(playerId), 1L, particles.interval());
         if (followTask != null) {
             moveTask = plugin.foliaLib.getScheduler().runAtEntityTimer(player, followTask, 1L, 1L);
         }

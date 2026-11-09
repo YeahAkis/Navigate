@@ -1,8 +1,6 @@
 package org.notionsmp.navigate;
 
-import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
@@ -13,8 +11,6 @@ public class PathfindingTask implements Runnable {
     private static final int SEARCH_RADIUS = 96;
     private static final int SEARCH_MARGIN = 24;
     private static final long RETRY_DELAY_MS = 3000;
-    private static final double PARTICLE_RANGE_SQ = 64 * 64;
-    private static final Particle.DustOptions DUST = new Particle.DustOptions(Color.fromRGB(220, 20, 60), 1.0f);
 
     private final Navigate plugin;
     private final Navigation navigation;
@@ -43,7 +39,9 @@ public class PathfindingTask implements Runnable {
         }
 
         if (playerLocation.distanceSquared(targetLocation) < 4) {
-            plugin.getMessages().send(player, "navigation.reached");
+            if (navigation.isArrivalMessage()) {
+                plugin.getMessages().send(player, "navigation.reached");
+            }
             plugin.getNavigationService().stop(player.getUniqueId());
             return;
         }
@@ -111,6 +109,10 @@ public class PathfindingTask implements Runnable {
     }
 
     private void displayPathParticles(Player player, List<Location> path) {
+        ParticleSettings settings = navigation.getParticles();
+        if (!settings.enabled()) {
+            return;
+        }
         Location playerLocation = player.getLocation();
         double ox = playerLocation.getX();
         double oy = playerLocation.getY();
@@ -119,10 +121,10 @@ public class PathfindingTask implements Runnable {
             double dx = block.getX() - ox;
             double dy = block.getY() - oy;
             double dz = block.getZ() - oz;
-            if (dx * dx + dy * dy + dz * dz > PARTICLE_RANGE_SQ) {
+            if (dx * dx + dy * dy + dz * dz > settings.rangeSquared()) {
                 continue;
             }
-            player.spawnParticle(Particle.DUST, block.getX() + 0.5, block.getY() + 0.5, block.getZ() + 0.5, 3, 0, 0, 0, 0, DUST);
+            player.spawnParticle(settings.particle(), block.getX() + 0.5, block.getY() + 0.5, block.getZ() + 0.5, settings.amount(), 0, 0, 0, 0, settings.data());
         }
     }
 }

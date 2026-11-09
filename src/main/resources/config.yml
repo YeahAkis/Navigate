@@ -1,6 +1,19 @@
 language: en_us
 per-player-language: true
 
+particles:
+  enabled: true
+  type: dust
+  color: "#DC143C"
+  size: 1.0
+  amount: 3
+  range: 64
+  interval: 10
+
+messages:
+  arrival: true
+  notify-target: true
+
 follow:
   speed: 0.22
   open-doors: true

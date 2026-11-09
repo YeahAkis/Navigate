@@ -49,6 +49,23 @@ With `follow` the player is moved along the path using velocity, so they walk, j
 
 Anti cheat plugins see this as server velocity, but some may still flag it. Exempt your players if that happens.
 
+## Config
+
+| Key | What it does |
+| --- | --- |
+| `particles.enabled` | Show the path as particles |
+| `particles.type` | Particle name, for example `dust` or `flame`. Particles that need extra data fall back to `dust` |
+| `particles.color`, `particles.size` | Hex color and size, only used by `dust` |
+| `particles.amount` | Particles per path block |
+| `particles.range` | Path blocks farther than this from the player are not drawn |
+| `particles.interval` | Ticks between redraws, also how often the path is checked |
+| `messages.arrival` | Tell the player when they reach the destination |
+| `messages.notify-target` | Tell a player when someone else starts or stops their navigation |
+| `language`, `per-player-language` | See Languages |
+| `follow.speed`, `follow.open-doors`, `follow.close-doors` | See Follow |
+
+Settings are read when a navigation starts, so run `/navigate reload` and start a new one to see changes.
+
 ## Permissions
 
 | Permission | What it does |

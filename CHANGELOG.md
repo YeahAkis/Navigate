@@ -11,6 +11,8 @@
 - Options are now `safe`/`unsafe`, `follow` and a block list in any order, the old `true`/`false` still works
 - New `/navigate reload` and `/navigate help`, `navigate.reload` permission
 - Messages come from language files in `plugins/Navigate/lang`, picked per player from the client language. English and LOLCAT are included, add your own to translate
+- Particles are configurable: type, color, size, amount, range and interval, or turn them off
+- `messages.arrival` and `messages.notify-target` options, players are told when someone else starts or stops their navigation
 - `strings.direction` is gone from the config, direction names are in the language files now
 
 ## 1.2

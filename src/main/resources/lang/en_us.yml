@@ -24,6 +24,8 @@ navigation:
   stopped-for: "Navigation stopped for <player>."
   not-navigating: "You are not currently navigating."
   not-navigating-for: "<player> is not currently navigating."
+  started-by: "<sender> started a navigation for you."
+  stopped-by: "<sender> stopped your navigation."
   reached: "You have reached your destination!"
 
 reload: "Config and languages reloaded."

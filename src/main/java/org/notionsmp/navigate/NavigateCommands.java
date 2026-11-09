@@ -159,6 +159,9 @@ final class NavigateCommands {
         for (Player player : players) {
             if (plugin.getNavigationService().stop(player)) {
                 messages().send(sender, "navigation.stopped-for", Placeholder.unparsed("player", player.getName()));
+                if (plugin.getConfig().getBoolean("messages.notify-target", true) && !sender.equals(player)) {
+                    messages().send(player, "navigation.stopped-by", Placeholder.unparsed("sender", sender.getName()));
+                }
                 stopped++;
             } else {
                 messages().send(sender, "navigation.not-navigating-for", Placeholder.unparsed("player", player.getName()));
@@ -208,6 +211,9 @@ final class NavigateCommands {
                     Placeholder.unparsed("follow", messages().plain(sender, options.follow() ? "state.enabled" : "state.disabled"))
             };
             messages().send(sender, self ? "navigation.started" : "navigation.started-for", resolvers);
+            if (!self && plugin.getConfig().getBoolean("messages.notify-target", true)) {
+                messages().send(player, "navigation.started-by", Placeholder.unparsed("sender", sender.getName()));
+            }
         });
     }
 

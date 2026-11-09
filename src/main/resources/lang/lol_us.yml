@@ -24,6 +24,8 @@ navigation:
   stopped-for: "Gowing stopped 4 <player>."
   not-navigating: "U r not gowing anywhere rite now."
   not-navigating-for: "<player> is not gowing anywhere rite now."
+  started-by: "<sender> startd a gowing 4 u."
+  stopped-by: "<sender> stopped ur gowing."
   reached: "U made it 2 teh place! Yay!"
 
 reload: "Config n languagez reloaded."
