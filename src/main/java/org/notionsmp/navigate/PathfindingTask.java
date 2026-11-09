@@ -80,7 +80,7 @@ public class PathfindingTask implements Runnable {
         int minZ = Math.max(Math.min(pz, tz) - SEARCH_MARGIN, pz - SEARCH_RADIUS);
         int maxZ = Math.min(Math.max(pz, tz) + SEARCH_MARGIN, pz + SEARCH_RADIUS);
 
-        WorldSnapshot snapshot = WorldSnapshot.capture(world, minX, maxX, minZ, maxZ);
+        WorldSnapshot snapshot = WorldSnapshot.capture(world, minX, maxX, minZ, maxZ, navigation.getChunkCache(), System.currentTimeMillis());
         AStarPathfinder pathfinder = navigation.getPathfinder();
         Location playerBlockLoc = new Location(world, px, playerLocation.getBlockY(), pz);
         Location targetBlockLoc = new Location(world, tx, targetLocation.getBlockY(), tz);

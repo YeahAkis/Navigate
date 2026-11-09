@@ -23,6 +23,7 @@ public class Navigation {
     private final boolean follow;
     private final PathfindingTask task;
     private final FollowTask followTask;
+    private final ChunkCache chunkCache = new ChunkCache();
     private WrappedTask pathTask;
     private WrappedTask moveTask;
 
@@ -104,6 +105,10 @@ public class Navigation {
 
     public int getLastChunkZ() {
         return lastChunkZ;
+    }
+
+    ChunkCache getChunkCache() {
+        return chunkCache;
     }
 
     AStarPathfinder getPathfinder() {

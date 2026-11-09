@@ -47,6 +47,10 @@ final class Openables {
         return OPENABLE[material.ordinal()];
     }
 
+    static boolean isOpenable(int ordinal) {
+        return OPENABLE[ordinal];
+    }
+
     static boolean isDoor(Material material) {
         return DOOR[material.ordinal()];
     }
