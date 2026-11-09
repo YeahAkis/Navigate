@@ -48,7 +48,11 @@ public class AStarPathfinder {
         passable.addAll(MaterialSetTag.WOOL_CARPETS.getValues());
         passable.addAll(MaterialSetTag.RAILS.getValues());
         passable.addAll(MaterialSetTag.CLIMBABLE.getValues());
-        passable.addAll(MaterialSetTag.DOORS.getValues());
+        for (Material material : Material.values()) {
+            if (!material.isLegacy() && Openables.isOpenable(material)) {
+                passable.add(material);
+            }
+        }
 
         Material[] materials = Material.values();
         PASSABLE = new boolean[materials.length];
@@ -60,7 +64,7 @@ public class AStarPathfinder {
                 continue;
             }
             PASSABLE[material.ordinal()] = passable.contains(material);
-            SOLID[material.ordinal()] = material.isSolid();
+            SOLID[material.ordinal()] = material.isSolid() && !(Openables.isOpenable(material) && !Openables.isTrapdoor(material));
             CLIMBABLE[material.ordinal()] = climbable.contains(material);
         }
     }

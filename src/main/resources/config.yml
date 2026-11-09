@@ -12,3 +12,5 @@ strings:
 
 follow:
   speed: 0.22
+  open-doors: true
+  close-doors: true

@@ -22,6 +22,7 @@ public class FollowTask implements Runnable {
 
     private final Navigate plugin;
     private final Navigation navigation;
+    private final DoorOpener doors;
 
     private List<Location> path;
     private int index;
@@ -31,6 +32,15 @@ public class FollowTask implements Runnable {
     public FollowTask(Navigate plugin, Navigation navigation) {
         this.plugin = plugin;
         this.navigation = navigation;
+        this.doors = plugin.getConfig().getBoolean("follow.open-doors", true)
+                ? new DoorOpener(plugin, plugin.getConfig().getBoolean("follow.close-doors", true))
+                : null;
+    }
+
+    void release() {
+        if (doors != null) {
+            doors.release();
+        }
     }
 
     @Override
@@ -70,6 +80,15 @@ public class FollowTask implements Runnable {
 
         if (index >= last) {
             return;
+        }
+
+        if (doors != null) {
+            doors.closePassed(position);
+            doors.openAround(position, path.get(index));
+            doors.openAround(position, path.get(index + 1));
+            if (index + 2 <= last) {
+                doors.openAround(position, path.get(index + 2));
+            }
         }
 
         Location next = path.get(index + 1);

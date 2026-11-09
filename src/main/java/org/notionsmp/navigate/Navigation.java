@@ -160,6 +160,9 @@ public class Navigation {
         if (moveTask != null) {
             moveTask.cancel();
         }
+        if (followTask != null) {
+            followTask.release();
+        }
     }
 
     private static Set<Material> normalizeMaterials(Set<Material> allowedMaterials) {
