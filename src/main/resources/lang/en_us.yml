@@ -32,6 +32,10 @@ state:
   enabled: "on"
   disabled: "off"
 
+placeholder:
+  no-player: "No player"
+  no-target: "No target"
+
 direction:
   south: "South"
   south-west: "South-West"

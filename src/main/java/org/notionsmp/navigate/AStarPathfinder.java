@@ -538,7 +538,7 @@ public class AStarPathfinder {
 
     public static String getDirection(Location from, Location to) {
         if (!from.getWorld().equals(to.getWorld())) {
-            return Navigate.getInstance().getConfig().getString("strings.direction.unknown", "N/A");
+            return "unknown";
         }
 
         double dx = to.getX() - from.getX();
@@ -546,17 +546,14 @@ public class AStarPathfinder {
         double angle = Math.toDegrees(Math.atan2(dz, dx)) - 90;
         if (angle < 0) angle += 360;
 
-        String path = "strings.direction.";
-        if (angle >= 337.5 || angle < 22.5) return Navigate.getInstance().getConfig().getString(path + "south", "South");
-        if (angle >= 22.5 && angle < 67.5) return Navigate.getInstance().getConfig().getString(path + "south-west", "South-West");
-        if (angle >= 67.5 && angle < 112.5) return Navigate.getInstance().getConfig().getString(path + "west", "West");
-        if (angle >= 112.5 && angle < 157.5) return Navigate.getInstance().getConfig().getString(path + "north-west", "North-West");
-        if (angle >= 157.5 && angle < 202.5) return Navigate.getInstance().getConfig().getString(path + "north", "North");
-        if (angle >= 202.5 && angle < 247.5) return Navigate.getInstance().getConfig().getString(path + "north-east", "North-East");
-        if (angle >= 247.5 && angle < 292.5) return Navigate.getInstance().getConfig().getString(path + "east", "East");
-        if (angle >= 292.5 && angle < 337.5) return Navigate.getInstance().getConfig().getString(path + "south-east", "South-East");
-
-        return Navigate.getInstance().getConfig().getString(path + "unknown", "N/A");
+        if (angle >= 337.5 || angle < 22.5) return "south";
+        if (angle < 67.5) return "south-west";
+        if (angle < 112.5) return "west";
+        if (angle < 157.5) return "north-west";
+        if (angle < 202.5) return "north";
+        if (angle < 247.5) return "north-east";
+        if (angle < 292.5) return "east";
+        return "south-east";
     }
 
     public static float getYaw(Location from, Location to) {

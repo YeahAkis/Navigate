@@ -1,18 +1,6 @@
 language: en_us
 per-player-language: true
 
-strings:
-  direction:
-    south: "South"
-    south-west: "South-West"
-    west: "West"
-    north-west: "North-West"
-    north: "North"
-    north-east: "North-East"
-    east: "East"
-    south-east: "South-East"
-    unknown: "N/A"
-
 follow:
   speed: 0.22
   open-doors: true

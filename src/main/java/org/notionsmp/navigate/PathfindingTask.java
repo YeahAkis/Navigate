@@ -43,7 +43,7 @@ public class PathfindingTask implements Runnable {
         }
 
         if (playerLocation.distanceSquared(targetLocation) < 4) {
-            player.sendMessage("You have reached your destination!");
+            plugin.getMessages().send(player, "navigation.reached");
             plugin.getNavigationService().stop(player.getUniqueId());
             return;
         }

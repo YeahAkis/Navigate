@@ -27,15 +27,15 @@ public class NavigatePlaceholder extends PlaceholderExpansion {
 
     @Override
     public String onPlaceholderRequest(Player player, @NotNull String params) {
-        if (player == null) return "No player";
+        if (player == null) return Navigate.getInstance().getMessages().plain(null, "placeholder.no-player");
 
         Navigation navigation = Navigate.getInstance().getNavigationService().getNavigation(player.getUniqueId());
-        if (navigation == null || navigation.getTargetLocation() == null) return "No target";
+        if (navigation == null || navigation.getTargetLocation() == null) return Navigate.getInstance().getMessages().plain(player, "placeholder.no-target");
 
         Location target = navigation.getTargetLocation();
 
         return switch (params.toLowerCase()) {
-            case "direction" -> AStarPathfinder.getDirection(player.getLocation(), target);
+            case "direction" -> Navigate.getInstance().getMessages().plain(player, "direction." + AStarPathfinder.getDirection(player.getLocation(), target));
             case "yaw" -> String.format("%.1f", AStarPathfinder.getYaw(player.getLocation(), target));
             case "pitch" -> String.format("%.1f", AStarPathfinder.getPitch(player.getLocation(), target));
             case "distance2d" -> String.valueOf(AStarPathfinder.getDistance2D(player.getLocation(), target));
