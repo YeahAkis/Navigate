@@ -1,3 +1,6 @@
+language: en_us
+per-player-language: true
+
 strings:
   direction:
     south: "South"

@@ -1,0 +1,54 @@
+help:
+  header: "<color:#006565>Navigate</color> commands:"
+  legend: "<gray><required> [optional]</gray>"
+  start: "<yellow>/navigate start <x y z> [safe|unsafe] [follow] [materials]</yellow> <gray>-</gray> Start navigating to a position, follow moves you along the path"
+  stop: "<yellow>/navigate stop</yellow> <gray>-</gray> Stop navigating"
+  startfor: "<yellow>/navigate startfor <players> <x y z> [safe|unsafe] [follow] [materials]</yellow> <gray>-</gray> Start navigating other players"
+  stopfor: "<yellow>/navigate stopfor <players></yellow> <gray>-</gray> Stop navigating other players"
+  reload: "<yellow>/navigate reload</yellow> <gray>-</gray> Reload the config and languages"
+  neofetch: "<yellow>/navigate neofetch</yellow> <gray>-</gray> Fun info about the plugin and server"
+
+error:
+  players-only-start: "Only players can start a navigation, use startfor from the console."
+  players-only-stop: "Only players can stop their navigation, use stopfor from the console."
+  no-follow-permission: "You do not have permission to be moved along the path."
+  unknown-option: "Unknown option or block: <value>"
+  no-players: "No players found."
+
+navigation:
+  started: "Navigation started to X:<x> Y:<y> Z:<z> with safe mode: <safe>, follow: <follow>"
+  started-for: "Navigation started for <player> to X:<x> Y:<y> Z:<z> with safe mode: <safe>, follow: <follow>"
+  previous-stopped: "Your previous navigation has been stopped."
+  previous-stopped-for: "Previous navigation for <player> has been stopped."
+  stopped: "Navigation stopped."
+  stopped-for: "Navigation stopped for <player>."
+  not-navigating: "You are not currently navigating."
+  not-navigating-for: "<player> is not currently navigating."
+  reached: "You have reached your destination!"
+
+reload: "Config and languages reloaded."
+
+state:
+  enabled: "on"
+  disabled: "off"
+
+direction:
+  south: "South"
+  south-west: "South-West"
+  west: "West"
+  north-west: "North-West"
+  north: "North"
+  north-east: "North-East"
+  east: "East"
+  south-east: "South-East"
+  unknown: "N/A"
+
+neofetch:
+  hover: "Click to go to<br>the <color:#1bd96a>Modrinth</color> page"
+  version: "Version"
+  tps: "TPS"
+  uptime: "Uptime"
+  uptime-format: "%1$02d Hours, %2$02d Minutes, %3$02d Seconds"
+  plugin-name: "Plugin Name"
+  plugin-version: "Plugin Version"
+  timezone: "Timezone"

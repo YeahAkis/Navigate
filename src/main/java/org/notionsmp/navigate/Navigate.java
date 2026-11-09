@@ -16,6 +16,7 @@ public final class Navigate extends JavaPlugin {
 
     private static Navigate instance;
     private NavigationService navigationService;
+    private Messages messages;
     public FoliaLib foliaLib;
 
     @Override
@@ -24,6 +25,8 @@ public final class Navigate extends JavaPlugin {
         foliaLib = new FoliaLib(this);
         navigationService = new NavigationService(this);
         saveDefaultConfig();
+        messages = new Messages(this);
+        messages.load();
 
         NavigateCommands commands = new NavigateCommands(this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
@@ -46,6 +49,15 @@ public final class Navigate extends JavaPlugin {
      */
     public NavigationService getNavigationService() {
         return navigationService;
+    }
+
+    public Messages getMessages() {
+        return messages;
+    }
+
+    void reloadAll() {
+        reloadConfig();
+        messages.load();
     }
 
     /**
