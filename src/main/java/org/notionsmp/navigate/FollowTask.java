@@ -17,7 +17,10 @@ public class FollowTask implements Runnable {
     private static final double JUMP_RANGE = 1.6;
     private static final double OFF_PATH_SQ = 9;
     private static final float MAX_TURN = 30f;
+    private static final float MAX_PITCH_TURN = 12f;
+    private static final float MAX_LOOK_PITCH = 25f;
     private static final int LOOKAHEAD = 8;
+    private static final int LOOK_AHEAD = 3;
     private static final int STUCK_TICKS = 40;
 
     private final Navigate plugin;
@@ -79,6 +82,9 @@ public class FollowTask implements Runnable {
         }
 
         if (index >= last) {
+            if (Math.abs(position.getPitch()) > 0.5f) {
+                player.setRotation(position.getYaw(), position.getPitch() + clamp(-position.getPitch(), MAX_PITCH_TURN));
+            }
             return;
         }
 
@@ -120,14 +126,36 @@ public class FollowTask implements Runnable {
             vy = JUMP_VELOCITY;
         }
 
-        if (horizontal > 0.3) {
-            float target = AStarPathfinder.getYaw(position, new Location(position.getWorld(), position.getX() + dx, position.getY(), position.getZ() + dz));
-            float delta = ((target - position.getYaw()) % 360 + 540) % 360 - 180;
-            float yaw = position.getYaw() + Math.max(-MAX_TURN, Math.min(MAX_TURN, delta));
-            player.setRotation(yaw, position.getPitch());
-        }
+        face(player, position, horizontal > 0.3 ? dx : Double.NaN, dz, last);
 
         player.setVelocity(new Vector(vx, vy, vz));
+    }
+
+    private void face(Player player, Location position, double dx, double dz, int last) {
+        float yaw = position.getYaw();
+        if (!Double.isNaN(dx)) {
+            float target = (float) Math.toDegrees(Math.atan2(dz, dx)) - 90f;
+            yaw += clamp(wrap(target - yaw), MAX_TURN);
+        }
+
+        Location ahead = path.get(Math.min(index + LOOK_AHEAD, last));
+        double lookX = ahead.getBlockX() + 0.5 - position.getX();
+        double lookZ = ahead.getBlockZ() + 0.5 - position.getZ();
+        double lookDistance = Math.sqrt(lookX * lookX + lookZ * lookZ);
+        double rise = ahead.getBlockY() - path.get(index).getBlockY();
+        float wanted = lookDistance > 1.0 ? (float) -Math.toDegrees(Math.atan2(rise, lookDistance)) : 0f;
+        wanted = clamp(wanted, MAX_LOOK_PITCH);
+        float pitch = position.getPitch() + clamp(wanted - position.getPitch(), MAX_PITCH_TURN);
+
+        player.setRotation(yaw, pitch);
+    }
+
+    private static float wrap(float angle) {
+        return ((angle % 360f) + 540f) % 360f - 180f;
+    }
+
+    private static float clamp(float value, float limit) {
+        return Math.max(-limit, Math.min(limit, value));
     }
 
     private boolean trackStuck(Location position) {
