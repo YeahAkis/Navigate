@@ -61,7 +61,7 @@ Anti cheat plugins see this as server velocity, but some may still flag it. Exem
 
 ## Languages
 
-Messages live in `plugins/Navigate/lang`. Only English is included. Players get the language of their game client when there is a file for it, otherwise `language` from the config is used. Set `per-player-language` to `false` to always use the configured one. Edit the file or add your own, a file called `it_it.yml` is picked up for Italian clients, and anything missing falls back to the English text built into the jar. Run `/navigate reload` after changing them.
+Messages live in `plugins/Navigate/lang`. English and LOLCAT (`lol_us`) are included. Players get the language of their game client when there is a file for it, otherwise `language` from the config is used. Set `per-player-language` to `false` to always use the configured one. Edit the file or add your own, a file called `it_it.yml` is picked up for Italian clients, and anything missing falls back to the English text built into the jar. Run `/navigate reload` after changing them.
 
 ## PlaceholderAPI
 

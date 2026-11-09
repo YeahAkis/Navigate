@@ -10,7 +10,7 @@
 - Commands use Brigadier: `~` coordinates, player selectors, tab completion for options and blocks, and the ACF library is gone from the jar
 - Options are now `safe`/`unsafe`, `follow` and a block list in any order, the old `true`/`false` still works
 - New `/navigate reload` and `/navigate help`, `navigate.reload` permission
-- Messages come from language files in `plugins/Navigate/lang`, picked per player from the client language. Only English is included, add your own to translate
+- Messages come from language files in `plugins/Navigate/lang`, picked per player from the client language. English and LOLCAT are included, add your own to translate
 - `strings.direction` is gone from the config, direction names are in the language files now
 
 ## 1.2

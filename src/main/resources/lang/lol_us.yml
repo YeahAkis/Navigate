@@ -1,0 +1,58 @@
+help:
+  header: "<color:#006565>Navigate</color> commandz:"
+  legend: "<gray><needed> [optionl]</gray>"
+  start: "<yellow>/navigate start <x y z> [safe|unsafe] [follow] [materials]</yellow> <gray>-</gray> Start gowing 2 a place, follow moovz u along teh path"
+  stop: "<yellow>/navigate stop</yellow> <gray>-</gray> Stop gowing"
+  startfor: "<yellow>/navigate startfor <players> <x y z> [safe|unsafe] [follow] [materials]</yellow> <gray>-</gray> Maek othr kittehs go"
+  stopfor: "<yellow>/navigate stopfor <players></yellow> <gray>-</gray> Maek othr kittehs stop"
+  reload: "<yellow>/navigate reload</yellow> <gray>-</gray> Reload teh config n languagez"
+  neofetch: "<yellow>/navigate neofetch</yellow> <gray>-</gray> Funnee infoz bout teh plugin n server"
+
+error:
+  players-only-start: "Onlee kittehs can start gowing, use startfor from teh console."
+  players-only-stop: "Onlee kittehs can stop dem gowing, use stopfor from teh console."
+  no-follow-permission: "U no haz permishun 2 b moovd automagically."
+  unknown-option: "Dunno dis option or blok: <value>"
+  no-players: "No kittehs found."
+
+navigation:
+  started: "Gowing started 2 X:<x> Y:<y> Z:<z> wif safe mode: <safe>, follow: <follow>"
+  started-for: "Gowing started 4 <player> 2 X:<x> Y:<y> Z:<z> wif safe mode: <safe>, follow: <follow>"
+  previous-stopped: "Ur last gowing was stopped."
+  previous-stopped-for: "Last gowing 4 <player> was stopped."
+  stopped: "Gowing stopped."
+  stopped-for: "Gowing stopped 4 <player>."
+  not-navigating: "U r not gowing anywhere rite now."
+  not-navigating-for: "<player> is not gowing anywhere rite now."
+  reached: "U made it 2 teh place! Yay!"
+
+reload: "Config n languagez reloaded."
+
+state:
+  enabled: "on"
+  disabled: "off"
+
+placeholder:
+  no-player: "No kitteh"
+  no-target: "No place"
+
+direction:
+  south: "Souf"
+  south-west: "Souf-West"
+  west: "West"
+  north-west: "North-West"
+  north: "North"
+  north-east: "North-East"
+  east: "East"
+  south-east: "Souf-East"
+  unknown: "Dunno"
+
+neofetch:
+  hover: "Clic 2 go 2<br>teh <color:#1bd96a>Modrinth</color> page"
+  version: "Vershun"
+  tps: "TPS"
+  uptime: "Awake 4"
+  uptime-format: "%1$02d Howrz, %2$02d Minits, %3$02d Secondz"
+  plugin-name: "Plugin Naem"
+  plugin-version: "Plugin Vershun"
+  timezone: "Timezone"
